@@ -78,6 +78,8 @@ create policy "echoes_own" on public.echoes
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Nearby notes within radius_m meters of (lat, lon)
+-- Nearby living notes. Decay rule: exclude when
+-- now > first_read_at + 24 hours (+ 7 days × echo_count). Dormant stay visible.
 create or replace function public.nearby_notes(
   lat double precision,
   lon double precision,
@@ -121,7 +123,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- Mark first read + wake from dormancy
+-- Mark personal read + awaken from dormancy (starts 24h decay clock once).
 create or replace function public.mark_note_read(p_note_id uuid)
 returns public.notes
 language plpgsql
@@ -130,9 +132,10 @@ as $$
 declare
   n public.notes;
 begin
+  -- Awaken only while dormant: stamp exact first_read_at, flip is_dormant.
   update public.notes
   set
-    first_read_at = coalesce(first_read_at, now()),
+    first_read_at = case when is_dormant then now() else first_read_at end,
     is_dormant = false
   where id = p_note_id
   returning * into n;
@@ -140,7 +143,7 @@ begin
   -- Keep drifts table in lockstep when dual-written.
   update public.drifts
   set
-    first_read_at = coalesce(first_read_at, now()),
+    first_read_at = case when is_dormant then now() else first_read_at end,
     is_dormant = false
   where id = p_note_id;
 

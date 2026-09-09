@@ -14,9 +14,15 @@ create table if not exists public.drifts (
   is_dormant boolean not null default true
 );
 
+-- Idempotent column ensure for existing drifts tables
+alter table public.drifts add column if not exists first_read_at timestamptz;
+alter table public.drifts add column if not exists is_dormant boolean not null default true;
+alter table public.drifts add column if not exists echo_count integer not null default 0;
+
 create index if not exists drifts_location_idx on public.drifts using gist (location);
 create index if not exists drifts_user_id_idx on public.drifts (user_id);
 create index if not exists drifts_created_at_idx on public.drifts (created_at desc);
+create index if not exists drifts_first_read_at_idx on public.drifts (first_read_at);
 
 alter table public.drifts enable row level security;
 
@@ -109,7 +115,44 @@ begin
 end;
 $$;
 
--- Nearby drifts within radius (PostGIS)
+-- Awakening: first open of a dormant drift starts the 24h decay clock.
+-- Only fires when is_dormant === true; later opens leave first_read_at alone.
+create or replace function public.awaken_drift(p_drift_id uuid)
+returns public.drifts
+language plpgsql
+security invoker
+as $$
+declare
+  d public.drifts;
+begin
+  update public.drifts
+  set
+    is_dormant = false,
+    first_read_at = now()
+  where id = p_drift_id
+    and is_dormant = true
+  returning * into d;
+
+  if found then
+    update public.notes
+    set
+      is_dormant = false,
+      first_read_at = coalesce(first_read_at, d.first_read_at)
+    where id = p_drift_id;
+    return d;
+  end if;
+
+  select * into d from public.drifts where id = p_drift_id;
+  if not found then
+    raise exception 'Drift not found';
+  end if;
+  return d;
+end;
+$$;
+
+-- Nearby drifts within radius (PostGIS).
+-- Decay: never return a drift when now > first_read_at + 24 hours
+-- (+ 7 days per Echo). Dormant drifts (first_read_at is null) stay fetchable.
 create or replace function public.nearby_drifts(
   lat double precision,
   lon double precision,

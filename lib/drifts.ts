@@ -1,7 +1,9 @@
 import * as Location from 'expo-location';
 
-import { MAX_DRIFT_LENGTH } from '@/lib/constants';
-import { createDemoNote } from '@/lib/demo-store';
+import { DISCOVERY_RADIUS_METERS, MAX_DRIFT_LENGTH } from '@/lib/constants';
+import { isNoteExpired } from '@/lib/decay';
+import { awakenDemoDrift, createDemoNote, listDemoNotes } from '@/lib/demo-store';
+import { haversineMeters } from '@/lib/haversine';
 import { fetchProfile } from '@/lib/notes-service';
 import { getSupabase, isDemoMode } from '@/lib/supabase';
 import type { Coords, Note } from '@/lib/types';
@@ -70,6 +72,97 @@ export async function dropDrift(userId: string, content: string, fallbackCoords?
 
   if (error) throw error;
   return data as Drift;
+}
+
+/**
+ * Awakening: when the reader opens the envelope on a dormant drift,
+ * flip is_dormant → false and stamp first_read_at to the exact open time.
+ * Already-awake drifts are left unchanged (decay clock stays put).
+ */
+export async function awakenDrift(driftId: string): Promise<Drift> {
+  if (isDemoMode) {
+    return noteToDrift(await awakenDemoDrift(driftId));
+  }
+
+  const supabase = getSupabase()!;
+  const { data, error } = await supabase.rpc('awaken_drift', { p_drift_id: driftId });
+  if (!error && data) return data as Drift;
+
+  // Fallback when awaken_drift RPC is not yet migrated on the project.
+  const missingFn =
+    !!error &&
+    (error.code === 'PGRST202' || /awaken_drift|Could not find the function/i.test(error.message ?? ''));
+  if (missingFn) return awakenDriftDirect(driftId);
+  if (error) throw error;
+  return awakenDriftDirect(driftId);
+}
+
+async function awakenDriftDirect(driftId: string): Promise<Drift> {
+  const supabase = getSupabase()!;
+  const { data: existing, error: fetchErr } = await supabase
+    .from('drifts')
+    .select('*')
+    .eq('id', driftId)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  if (!existing) throw new Error('Drift not found');
+
+  if (existing.is_dormant !== true) {
+    return existing as Drift;
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('drifts')
+    .update({ is_dormant: false, first_read_at: now })
+    .eq('id', driftId)
+    .eq('is_dormant', true)
+    .select('*')
+    .maybeSingle();
+  if (error) throw error;
+
+  // Keep notes dual-write in sync when present.
+  await supabase
+    .from('notes')
+    .update({ is_dormant: false, first_read_at: now })
+    .eq('id', driftId)
+    .eq('is_dormant', true);
+
+  return (data ?? existing) as Drift;
+}
+
+/**
+ * Location poll for nearby living drifts.
+ * Decayed (now > first_read_at + 24h [+ Echo]) are excluded — no vibration.
+ */
+export async function fetchNearbyDrifts(
+  coords: Coords,
+  radiusMeters = DISCOVERY_RADIUS_METERS
+): Promise<Drift[]> {
+  if (isDemoMode) {
+    const notes = await listDemoNotes();
+    return notes
+      .filter((n) => !isNoteExpired(n))
+      .map((n) => ({
+        note: n,
+        distance: haversineMeters(coords, { latitude: n.latitude, longitude: n.longitude }),
+      }))
+      .filter((x) => x.distance <= radiusMeters)
+      .sort((a, b) => a.distance - b.distance)
+      .map((x) => noteToDrift(x.note));
+  }
+
+  const supabase = getSupabase()!;
+  void supabase.rpc('purge_expired_drifts');
+
+  const { data, error } = await supabase.rpc('nearby_drifts', {
+    lat: coords.latitude,
+    lon: coords.longitude,
+    radius_m: radiusMeters,
+  });
+  if (error) throw error;
+
+  return ((data ?? []) as Drift[]).filter((d) => !isNoteExpired(d));
 }
 
 function noteToDrift(note: Note): Drift {

@@ -6,12 +6,14 @@ import { Platform } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from '@/hooks/useLocation';
 import { DISCOVERY_POLL_MS, DISCOVERY_RADIUS_METERS } from '@/lib/constants';
+import { awakenDrift } from '@/lib/drifts';
 import { discoverUnreadNotes, markRead } from '@/lib/notes-service';
 import type { Coords, NearbyNote } from '@/lib/types';
 
 /**
- * Discovery mechanic: every 10s, sense GPS + nearby_notes (15m).
- * Unread notes trigger a double heartbeat and surface as an envelope.
+ * Discovery mechanic: every 10s, sense GPS + nearby notes (15m).
+ * Decayed drifts (past first_read_at + 24h) are excluded from the poll —
+ * they never vibrate. Opening the envelope awakens a dormant drift.
  */
 export function useDiscovery() {
   const { userId } = useAuth();
@@ -28,6 +30,7 @@ export function useDiscovery() {
       const coords = await resolveCoords(liveCoords);
       if (!coords) return;
 
+      // Poll living notes only — decayed (first_read_at + 24h) are dead.
       const unread = await discoverUnreadNotes(coords, userId);
       if (unread.length === 0) {
         setEnvelope(null);
@@ -62,6 +65,9 @@ export function useDiscovery() {
   const openEnvelope = useCallback(async () => {
     if (!envelope || !userId) return;
     try {
+      // Awakening: if is_dormant, flip false + stamp first_read_at = now().
+      await awakenDrift(envelope.id);
+      // Personal read stamp (also syncs notes/drifts if awaken RPC missing).
       await markRead(envelope.id, userId);
     } catch {
       // Still show the letter even if stamp fails.
