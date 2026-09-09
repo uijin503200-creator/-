@@ -57,7 +57,7 @@ export function DropDriftModal({
     content.trim().length > 0 && pagesLeft > 0 && !submitting && remaining >= 0;
 
   const veilStyle = useAnimatedStyle(() => ({
-    opacity: veil.value * 0.92,
+    opacity: veil.value,
   }));
 
   const handleSubmit = () => {
@@ -174,11 +174,17 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     color: palette.paper,
     padding: 0,
+    margin: 0,
     borderWidth: 0,
     backgroundColor: 'transparent',
   },
   inputWeb: Platform.select({
-    web: { outlineWidth: 0 } as object,
+    web: {
+      outlineWidth: 0,
+      outlineStyle: 'none',
+      boxShadow: 'none',
+      borderWidth: 0,
+    } as object,
     default: {},
   }),
   meta: {
