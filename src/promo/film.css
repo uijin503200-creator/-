@@ -38,37 +38,25 @@
 
 .film-feed-mask {
   position: absolute;
-  top: 9%;
-  left: 8.2%;
-  right: 8.2%;
-  bottom: 9.4%;
-  border-radius: 14px;
+  top: 25.4%;
+  left: 35.25%;
+  width: 39.55%;
+  height: 46.9%;
   overflow: hidden;
-  opacity: 0.42;
-  mix-blend-mode: luminosity;
+  border-radius: 2px;
 }
 
 .film-feed-track {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  will-change: transform;
+  will-change: transform, filter;
 }
 
-.film-card {
-  height: 220px;
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(0,0,0,0.35)),
-    repeating-linear-gradient(90deg, #111 0 40%, #1c1c1c 40% 70%, #0a0a0a 70% 100%);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
-}
-
-.film-card:nth-child(odd) {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.5)),
-    repeating-linear-gradient(45deg, #161616 0 12px, #0d0d0d 12px 24px);
+.film-feed-slice {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: grayscale(1) contrast(1.04);
 }
 
 .film-vignette {
@@ -199,16 +187,69 @@
   color: rgba(212, 212, 216, 0.55);
 }
 
-.film-paper {
-  max-width: 520px;
+.film-letter {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 560px;
   padding: 0 32px;
+}
+
+.film-handle {
+  width: 48px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(63, 63, 70, 0.7);
+  margin-bottom: 48px;
+}
+
+.film-paper {
   text-align: center;
   font-family: "Playfair Display", serif;
   font-size: 32px;
   line-height: 1.45;
   color: #dbe7ff;
   text-shadow: 0 0 24px rgba(160, 190, 255, 0.35);
-  z-index: 3;
+}
+
+.film-echo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid #18181b;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #a1a1aa;
+  font-style: normal;
+}
+
+.film-echo span {
+  font-size: 10px;
+  color: #3f3f46;
+  letter-spacing: 0.2em;
+}
+
+.film-echo em {
+  font-style: normal;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.film-walk {
+  position: absolute;
+  bottom: 10%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: #71717a;
+  z-index: 4;
 }
 
 .film-drop {
