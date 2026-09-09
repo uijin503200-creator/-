@@ -1,16 +1,23 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { transcribeDnaToMrna } from "@/app/actions/transcribe";
-import { translateMrnaToProtein } from "@/app/actions/translate";
+import { useFormStatus } from "react-dom";
+import { sendVesicle } from "@/app/actions/transcribe";
 import { CELL_PHENOTYPES, effectiveMutationChance } from "@/lib/biology";
 import type { Profile } from "@/lib/data/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CodonStrand } from "./codon-strand";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+function SendButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="lg" disabled={pending}>
+      {pending ? "Ribosome reading…" : "Transcribe → translate"}
+    </Button>
+  );
+}
 
 export function TranscriptionForm({
   me,
@@ -19,55 +26,22 @@ export function TranscriptionForm({
   me: Profile;
   recipients: Profile[];
 }) {
-  const router = useRouter();
   const [dna, setDna] = useState("meet me at the tight junction after dusk");
-  const [recipientId, setRecipientId] = useState(recipients[0]?.id ?? "");
-  const [visibility, setVisibility] = useState<"direct" | "feed">("feed");
-  const [pending, start] = useTransition();
-
-  const chance = useMemo(
-    () => effectiveMutationChance(me.cellType, me.polymeraseLevel),
-    [me.cellType, me.polymeraseLevel],
-  );
-  const recipient = recipients.find((cell) => cell.id === recipientId);
+  const chance = effectiveMutationChance(me.cellType, me.polymeraseLevel);
+  const defaultRecipient = recipients[0]?.id ?? "";
 
   return (
-    <form
-      className="space-y-6"
-      onSubmit={(event) => {
-        event.preventDefault();
-        start(async () => {
-          const transcribed = await transcribeDnaToMrna({
-            dnaSeed: dna,
-            recipientId,
-            visibility,
-          });
-          if (!transcribed.ok) {
-            toast.error(transcribed.error);
-            return;
-          }
-          toast.message("mRNA packaged into a vesicle.");
-          const translated = await translateMrnaToProtein(transcribed.vesicle.id);
-          if (!translated.ok) {
-            toast.error(translated.error);
-            return;
-          }
-          toast.success(
-            translated.vesicle.isMisfolded
-              ? "Ribosome produced a misfolded chain."
-              : "Protein folded in the recipient cytoplasm.",
-          );
-          router.push("/inbox");
-        });
-      }}
-    >
+    <form action={sendVesicle} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="dna">DNA seed — exact intent</Label>
         <Textarea
           id="dna"
+          name="dnaSeed"
           value={dna}
           onChange={(event) => setDna(event.target.value)}
           className="min-h-32 font-mono"
+          required
+          minLength={3}
         />
         <CodonStrand text={dna} />
       </div>
@@ -76,44 +50,46 @@ export function TranscriptionForm({
         <fieldset className="space-y-2">
           <Label>Recipient ribosome</Label>
           <div className="flex flex-wrap gap-2">
-            {recipients.map((cell) => (
-              <button
+            {recipients.map((cell, index) => (
+              <label
                 key={cell.id}
-                type="button"
-                onClick={() => setRecipientId(cell.id)}
-                className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.14em] ${
-                  recipientId === cell.id
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-muted-foreground"
-                }`}
+                className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-muted-foreground has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground"
               >
+                <input
+                  type="radio"
+                  name="recipientId"
+                  value={cell.id}
+                  defaultChecked={index === 0 || cell.id === defaultRecipient}
+                  className="sr-only"
+                />
                 @{cell.handle}
-              </button>
+              </label>
             ))}
           </div>
-          {recipient && (
-            <p className="text-sm text-muted-foreground">
-              {CELL_PHENOTYPES[recipient.cellType].epithet}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">
+            {recipients[0]
+              ? CELL_PHENOTYPES[recipients[0].cellType].epithet
+              : "No other cells in culture."}
+          </p>
         </fieldset>
 
         <fieldset className="space-y-2">
           <Label>Release path</Label>
           <div className="flex gap-2">
-            {(["feed", "direct"] as const).map((value) => (
-              <button
+            {(["feed", "direct"] as const).map((value, index) => (
+              <label
                 key={value}
-                type="button"
-                onClick={() => setVisibility(value)}
-                className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.14em] ${
-                  visibility === value
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-muted-foreground"
-                }`}
+                className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-muted-foreground has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-primary-foreground"
               >
+                <input
+                  type="radio"
+                  name="visibility"
+                  value={value}
+                  defaultChecked={index === 0}
+                  className="sr-only"
+                />
                 {value === "feed" ? "Microscope feed" : "Private cytoplasm"}
-              </button>
+              </label>
             ))}
           </div>
           <p className="text-sm text-muted-foreground">
@@ -123,9 +99,7 @@ export function TranscriptionForm({
         </fieldset>
       </div>
 
-      <Button type="submit" size="lg" disabled={pending || !recipientId}>
-        Transcribe → translate
-      </Button>
+      <SendButton />
     </form>
   );
 }

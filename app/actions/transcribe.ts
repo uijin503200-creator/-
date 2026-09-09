@@ -5,6 +5,8 @@ import { transcribeDnaToMrnaCore } from "@/lib/biology";
 import { requireSessionCell } from "@/lib/data";
 import type { Vesicle } from "@/lib/data/types";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { translateMrnaToProtein } from "./translate";
 
 export type TranscribeResult =
   | { ok: true; vesicle: Vesicle }
@@ -60,4 +62,24 @@ export async function transcribeDnaToMrna(input: {
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Transcription failed." };
   }
+}
+
+export async function sendVesicle(formData: FormData): Promise<void> {
+  const dnaSeed = String(formData.get("dnaSeed") ?? "");
+  const recipientId = String(formData.get("recipientId") ?? "");
+  const visibility = formData.get("visibility") === "direct" ? "direct" : "feed";
+
+  const transcribed = await transcribeDnaToMrna({ dnaSeed, recipientId, visibility });
+  if (!transcribed.ok) {
+    redirect(`/compose?error=${encodeURIComponent(transcribed.error)}`);
+    return;
+  }
+
+  const translated = await translateMrnaToProtein(transcribed.vesicle.id);
+  if (!translated.ok) {
+    redirect(`/compose?error=${encodeURIComponent(translated.error)}`);
+    return;
+  }
+
+  redirect("/inbox");
 }

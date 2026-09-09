@@ -4,8 +4,13 @@ import { MicroscopeStage } from "@/components/lab/microscope-stage";
 import { requireSessionCell } from "@/lib/data";
 import Link from "next/link";
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { profile } = await requireSessionCell();
+  const params = await searchParams;
 
   return (
     <div className="relative min-h-dvh">
@@ -20,6 +25,7 @@ export default async function HomePage() {
           The recipient ribosome translates that transcript into a Protein. Cell type, polymerase
           fidelity, and chaperones decide whether it folds.
         </p>
+        {params.error && <p className="mt-4 text-sm text-misfold">{params.error}</p>}
         {profile && (
           <p className="mt-4 text-sm">
             <Link href="/feed" className="text-primary underline-offset-4 hover:underline">

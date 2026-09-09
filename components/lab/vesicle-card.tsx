@@ -1,14 +1,22 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useFormStatus } from "react-dom";
 import { CELL_PHENOTYPES } from "@/lib/biology";
-import { applyChaperone } from "@/app/actions/store";
+import { applyChaperoneForm } from "@/app/actions/store";
 import type { VesicleWithCells } from "@/lib/data/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { useTransition } from "react";
+
+function ChaperoneButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button className="mt-4" variant="protein" disabled={pending} type="submit">
+      {pending ? "Refolding…" : "Deploy chaperone"}
+    </Button>
+  );
+}
 
 export function VesicleCard({
   vesicle,
@@ -17,7 +25,6 @@ export function VesicleCard({
   vesicle: VesicleWithCells;
   canRefold?: boolean;
 }) {
-  const [pending, start] = useTransition();
   const sender = CELL_PHENOTYPES[vesicle.sender.cellType];
   const misfit = vesicle.isMisfolded;
 
@@ -74,20 +81,10 @@ export function VesicleCard({
       )}
 
       {canRefold && misfit && (
-        <Button
-          className="mt-4"
-          variant="protein"
-          disabled={pending}
-          onClick={() =>
-            start(async () => {
-              const result = await applyChaperone(vesicle.id);
-              if (result.ok) toast.success("Chaperone barrel engaged. Chain refolded.");
-              else toast.error(result.error);
-            })
-          }
-        >
-          Deploy chaperone
-        </Button>
+        <form action={applyChaperoneForm}>
+          <input type="hidden" name="vesicleId" value={vesicle.id} />
+          <ChaperoneButton />
+        </form>
       )}
     </motion.article>
   );

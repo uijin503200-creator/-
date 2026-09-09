@@ -1,44 +1,39 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { enterTheLab } from "@/app/actions/cell";
-import { CELL_PHENOTYPES, CELL_TYPE_IDS, type CellType } from "@/lib/biology";
+import { useFormStatus } from "react-dom";
+import { enterTheLabForm } from "@/app/actions/cell";
+import { CELL_PHENOTYPES, CELL_TYPE_IDS } from "@/lib/biology";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+
+function SeatButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="lg" disabled={pending}>
+      {pending ? "Seating…" : "Seat this cell on the stage"}
+    </Button>
+  );
+}
 
 export function EnterLabForm() {
-  const [cellType, setCellType] = useState<CellType>("epithelial");
-  const [handle, setHandle] = useState("primary_culture");
-  const [pending, start] = useTransition();
-
   return (
-    <form
-      className="mx-auto flex w-full max-w-3xl flex-col gap-8"
-      onSubmit={(event) => {
-        event.preventDefault();
-        start(async () => {
-          const result = await enterTheLab({ handle, cellType });
-          if (result && "error" in result) toast.error(result.error);
-        });
-      }}
-    >
+    <form action={enterTheLabForm} className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div className="grid gap-3 sm:grid-cols-3">
         {CELL_TYPE_IDS.map((id) => {
           const phenotype = CELL_PHENOTYPES[id];
-          const selected = cellType === id;
           return (
-            <button
+            <label
               key={id}
-              type="button"
-              onClick={() => setCellType(id)}
-              className={cn(
-                "rounded-[1.8rem] border bg-black/30 p-4 text-left transition membrane",
-                selected ? "border-primary/70" : "border-border/70 opacity-80 hover:opacity-100",
-              )}
+              className="cursor-pointer rounded-[1.8rem] border border-border/70 bg-black/30 p-4 text-left transition membrane has-[:checked]:border-primary/70 has-[:checked]:opacity-100 opacity-80 hover:opacity-100"
             >
+              <input
+                type="radio"
+                name="cellType"
+                value={id}
+                defaultChecked={id === "epithelial"}
+                className="sr-only"
+              />
               <span
                 className="mb-3 block size-3 rounded-full"
                 style={{ background: phenotype.accent, boxShadow: `0 0 16px ${phenotype.accent}` }}
@@ -48,7 +43,7 @@ export function EnterLabForm() {
                 {phenotype.epithet}
               </p>
               <p className="mt-3 text-sm text-muted-foreground">{phenotype.summary}</p>
-            </button>
+            </label>
           );
         })}
       </div>
@@ -57,15 +52,15 @@ export function EnterLabForm() {
         <Label htmlFor="handle">Cell handle</Label>
         <Input
           id="handle"
-          value={handle}
-          onChange={(event) => setHandle(event.target.value)}
+          name="handle"
+          defaultValue="primary_culture"
           placeholder="keratin"
+          minLength={3}
+          required
         />
       </div>
 
-      <Button type="submit" size="lg" disabled={pending}>
-        Seat this cell on the stage
-      </Button>
+      <SeatButton />
     </form>
   );
 }

@@ -1,44 +1,49 @@
 "use client";
 
-import { useTransition } from "react";
-import { switchCellType } from "@/app/actions/cell";
+import { useFormStatus } from "react-dom";
+import { switchCellTypeForm } from "@/app/actions/cell";
 import { CELL_PHENOTYPES, CELL_TYPE_IDS } from "@/lib/biology";
 import type { Profile } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+
+function DiffButton({
+  active,
+  label,
+}: {
+  active: boolean;
+  label: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" disabled={pending || active} className="w-full text-left">
+      {label}
+    </button>
+  );
+}
 
 export function CellTypeSwitch({ profile }: { profile: Profile }) {
-  const [pending, start] = useTransition();
-
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {CELL_TYPE_IDS.map((id) => {
         const phenotype = CELL_PHENOTYPES[id];
         const active = profile.cellType === id;
         return (
-          <button
+          <form
             key={id}
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              start(async () => {
-                const result = await switchCellType(id);
-                if (result.ok) toast.success(`Differentiated into ${phenotype.label}.`);
-                else toast.error(result.error);
-              })
-            }
+            action={switchCellTypeForm}
             className={cn(
-              "rounded-[1.6rem] border p-4 text-left membrane",
+              "rounded-[1.6rem] border p-4 membrane",
               active ? "border-primary/70" : "border-border/60 opacity-75",
             )}
           >
+            <input type="hidden" name="cellType" value={id} />
             <p className="font-display text-xl" style={{ color: phenotype.accent }}>
-              {phenotype.label}
+              <DiffButton active={active} label={phenotype.label} />
             </p>
             <p className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
               {phenotype.epithet}
             </p>
-          </button>
+          </form>
         );
       })}
     </div>

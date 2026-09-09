@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import type { CellType } from "@/lib/biology";
+import { CELL_TYPE_IDS, type CellType } from "@/lib/biology";
 import { getLabRepository, requireSessionCell, setSessionCellId } from "@/lib/data";
 import type { Profile } from "@/lib/data/types";
 import { revalidatePath } from "next/cache";
@@ -9,6 +9,23 @@ import { redirect } from "next/navigation";
 
 function normalizeHandle(handle: string) {
   return handle.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 24);
+}
+
+export async function enterTheLabForm(formData: FormData): Promise<void> {
+  const handle = String(formData.get("handle") ?? "");
+  const cellType = String(formData.get("cellType") ?? "epithelial");
+  if (!CELL_TYPE_IDS.includes(cellType as CellType)) {
+    redirect(`/?error=${encodeURIComponent("Unknown cell type.")}`);
+  }
+  const result = await enterTheLab({ handle, cellType: cellType as CellType });
+  if (result && "error" in result) {
+    redirect(`/?error=${encodeURIComponent(result.error)}`);
+  }
+}
+
+export async function switchCellTypeForm(formData: FormData): Promise<void> {
+  const cellType = String(formData.get("cellType") ?? "") as CellType;
+  await switchCellType(cellType);
 }
 
 export async function enterTheLab(input: {

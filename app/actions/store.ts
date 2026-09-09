@@ -6,6 +6,16 @@ import { revalidatePath } from "next/cache";
 
 export type StoreResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
+export async function purchaseOrganelleForm(formData: FormData): Promise<void> {
+  const slug = String(formData.get("slug") ?? "") as OrganelleSlug;
+  await purchaseOrganelle(slug);
+}
+
+export async function applyChaperoneForm(formData: FormData): Promise<void> {
+  const vesicleId = String(formData.get("vesicleId") ?? "");
+  await applyChaperone(vesicleId);
+}
+
 export async function purchaseOrganelle(
   slug: OrganelleSlug,
 ): Promise<StoreResult<Profile>> {
