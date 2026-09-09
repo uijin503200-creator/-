@@ -1,22 +1,23 @@
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DriftMap } from '@/components/DriftMap';
-import { DropDriftModal } from '@/components/DropDriftModal';
-import { FadeIn } from '@/components/FadeIn';
-import { GhostButton } from '@/components/GhostButton';
-import { PagesMeter } from '@/components/PagesMeter';
 import { useAuth } from '@/hooks/useAuth';
-import { useHeartbeat } from '@/hooks/useHeartbeat';
+import { useDiscovery } from '@/hooks/useDiscovery';
 import { useLocation } from '@/hooks/useLocation';
 import { useNotes } from '@/hooks/useNotes';
 import { dropDrift } from '@/lib/drifts';
-import { formatRemaining, remainingLifeMs } from '@/lib/decay';
-import { withinDiscovery } from '@/lib/notes-service';
 import { palette, typography } from '@/lib/theme';
+
+import { AncientLetter } from '@/components/AncientLetter';
+import { DriftMap } from '@/components/DriftMap';
+import { DropDriftModal } from '@/components/DropDriftModal';
+import { EnvelopeSignal } from '@/components/EnvelopeSignal';
+import { FadeIn } from '@/components/FadeIn';
+import { GhostButton } from '@/components/GhostButton';
+import { PagesMeter } from '@/components/PagesMeter';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -32,19 +33,14 @@ export default function HomeScreen() {
     hardResetDemo,
   } = useLocation();
   const { notes, loading: notesLoading, refresh } = useNotes();
-  useHeartbeat(notes);
+  const { envelope, letterOpen, openEnvelope, closeLetter, senseNow } = useDiscovery();
 
   const [asking, setAsking] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
 
-  const discoverable = useMemo(
-    () => notes.filter((n) => withinDiscovery(n.distanceMeters)),
-    [notes]
-  );
   const closest = notes[0] ?? null;
-  const inRange = discoverable.length > 0;
   const granted = permission === Location.PermissionStatus.GRANTED;
   const denied = permission === Location.PermissionStatus.DENIED;
   const pagesLeft = profile?.pages ?? 0;
@@ -148,22 +144,11 @@ export default function HomeScreen() {
         </FadeIn>
 
         <View style={styles.middle} pointerEvents="box-none">
-          {inRange ? (
-            <View style={styles.discoverList}>
-              {discoverable.map((note) => (
-                <Pressable
-                  key={note.id}
-                  onPress={() => router.push(`/note/${note.id}`)}
-                  style={styles.discoverRow}>
-                  <Text style={styles.discoverTitle}>Open note</Text>
-                  <Text style={styles.discoverMeta}>
-                    {note.is_dormant ? 'dormant' : formatRemaining(remainingLifeMs(note))}
-                    {' · '}
-                    {Math.round(note.distanceMeters)}m
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+          {envelope && !letterOpen ? (
+            <FadeIn>
+              <Text style={styles.envelopeHint}>Something waits nearby</Text>
+              <EnvelopeSignal onPress={openEnvelope} />
+            </FadeIn>
           ) : (
             <Text style={styles.status}>
               {notesLoading
@@ -176,11 +161,14 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.footer} pointerEvents="box-none">
-          {(demoMode || usingDemoLocation) && closest && !inRange ? (
+          {(demoMode || usingDemoLocation) && closest && !envelope ? (
             <GhostButton
               label="Walk toward nearest"
               variant="ghost"
-              onPress={() => walkToward(closest)}
+              onPress={() => {
+                walkToward(closest);
+                void senseNow();
+              }}
               style={styles.demoBtn}
             />
           ) : null}
@@ -225,6 +213,16 @@ export default function HomeScreen() {
           if (!submitting) setDropOpen(false);
         }}
         onSubmit={onSubmitDrift}
+      />
+
+      <AncientLetter
+        visible={letterOpen && !!envelope}
+        content={envelope?.content ?? ''}
+        onClose={() => {
+          closeLetter();
+          void refresh();
+          void senseNow();
+        }}
       />
     </View>
   );
@@ -314,25 +312,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 8,
   },
-  discoverList: {
-    gap: 14,
-  },
-  discoverRow: {
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-  },
-  discoverTitle: {
-    fontFamily: typography.bodyMedium,
-    fontSize: 13,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    color: palette.echo,
-  },
-  discoverMeta: {
+  envelopeHint: {
     fontFamily: typography.body,
     fontSize: 13,
-    color: palette.mist,
+    color: palette.fog,
+    textAlign: 'center',
+    marginBottom: 14,
+    letterSpacing: 0.4,
   },
   footer: {
     alignItems: 'center',

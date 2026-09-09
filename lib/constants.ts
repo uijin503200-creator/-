@@ -8,6 +8,7 @@ export const PAGE_REGEN_MS = 12 * 60 * 60 * 1000; // 1 page every 12 hours
 export const MAX_NOTE_LENGTH = 280;
 export const MAX_DRIFT_LENGTH = 150;
 export const LOCATION_POLL_MS = 4000;
+export const DISCOVERY_POLL_MS = 10_000; // sense for unread notes every 10s
 
 /** Demo default: a quiet plaza near Union Square, SF */
 export const DEMO_ORIGIN = {

@@ -5,7 +5,9 @@ import {
   echoDemoNote,
   ensureDemoUser,
   getDemoProfile,
+  getDemoReadIds,
   hasDemoEchoed,
+  hasDemoRead,
   listDemoNotes,
   markDemoRead,
 } from './demo-store';
@@ -65,13 +67,70 @@ export async function fetchNearbyNotes(coords: Coords): Promise<NearbyNote[]> {
   const { data, error } = await supabase.rpc('nearby_notes', {
     lat: coords.latitude,
     lon: coords.longitude,
-    radius_m: 500, // fetch a wider ring; client filters discovery radius for heartbeat
+    radius_m: 500, // wider ring for map markers
   });
   if (error) throw error;
   return ((data ?? []) as Note[])
     .map((n) => decorate(n, coords))
     .filter((n) => !n.isExpired)
     .sort((a, b) => a.distanceMeters - b.distanceMeters);
+}
+
+/** Strict 15m discovery via PostGIS nearby_notes / Haversine demo. */
+export async function fetchNotesWithinRadius(
+  coords: Coords,
+  radiusMeters = DISCOVERY_RADIUS_METERS
+): Promise<NearbyNote[]> {
+  if (isDemoMode) {
+    const notes = await listDemoNotes();
+    return notes
+      .map((n) => decorate(n, coords))
+      .filter((n) => !n.isExpired && n.distanceMeters <= radiusMeters)
+      .sort((a, b) => a.distanceMeters - b.distanceMeters);
+  }
+
+  const supabase = getSupabase()!;
+  const { data, error } = await supabase.rpc('nearby_notes', {
+    lat: coords.latitude,
+    lon: coords.longitude,
+    radius_m: radiusMeters,
+  });
+  if (error) throw error;
+  return ((data ?? []) as Note[])
+    .map((n) => decorate(n, coords))
+    .filter((n) => !n.isExpired && n.distanceMeters <= radiusMeters)
+    .sort((a, b) => a.distanceMeters - b.distanceMeters);
+}
+
+export async function getReadIds(userId: string): Promise<Set<string>> {
+  if (isDemoMode) return getDemoReadIds(userId);
+
+  const supabase = getSupabase()!;
+  const { data, error } = await supabase.from('note_reads').select('note_id').eq('user_id', userId);
+  if (error) throw error;
+  return new Set((data ?? []).map((r: { note_id: string }) => r.note_id));
+}
+
+export async function hasRead(noteId: string, userId: string): Promise<boolean> {
+  if (isDemoMode) return hasDemoRead(noteId, userId);
+
+  const supabase = getSupabase()!;
+  const { data, error } = await supabase
+    .from('note_reads')
+    .select('note_id')
+    .eq('note_id', noteId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
+/** Unread notes currently inside the 15m discovery radius. */
+export async function discoverUnreadNotes(coords: Coords, userId: string): Promise<NearbyNote[]> {
+  const within = await fetchNotesWithinRadius(coords, DISCOVERY_RADIUS_METERS);
+  if (within.length === 0) return [];
+  const readIds = await getReadIds(userId);
+  return within.filter((n) => !readIds.has(n.id));
 }
 
 export async function fetchNoteById(id: string, coords: Coords | null): Promise<NearbyNote | null> {

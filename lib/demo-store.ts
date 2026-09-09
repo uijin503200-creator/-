@@ -196,6 +196,16 @@ export async function hasDemoEchoed(noteId: string, userId: string): Promise<boo
   return (echoes[userId] ?? []).includes(noteId);
 }
 
+export async function hasDemoRead(noteId: string, userId: string): Promise<boolean> {
+  const reads = await readJson<Record<string, string[]>>(READS_KEY, {});
+  return (reads[userId] ?? []).includes(noteId);
+}
+
+export async function getDemoReadIds(userId: string): Promise<Set<string>> {
+  const reads = await readJson<Record<string, string[]>>(READS_KEY, {});
+  return new Set(reads[userId] ?? []);
+}
+
 export async function resetDemoWorld(): Promise<void> {
   await AsyncStorage.multiRemove([NOTES_KEY, PROFILE_KEY, READS_KEY, ECHOES_KEY, USER_KEY]);
   await ensureDemoUser();
