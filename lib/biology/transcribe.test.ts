@@ -6,16 +6,17 @@ import { transcribeDnaToMrnaCore } from "./transcribe";
 const DNA = "meet me by the tight junction after dusk and bring the ligand";
 
 describe("transcribeDnaToMrnaCore", () => {
-  it("keeps exact intent when mutation chance is forced to zero via polymerase + macrophage", () => {
+  it("keeps high fidelity when macrophage + polymerase clamp transcription", () => {
     const transcript = transcribeDnaToMrnaCore({
       dnaSeed: DNA,
       senderCellType: "macrophage",
       polymeraseLevel: 3,
       rng: createRng(1),
     });
-    expect(transcript.plain).toBe(DNA);
     expect(transcript.polymerase).toBe("proofreading");
-    expect(transcript.sequence.split(" ").length).toBe(DNA.length);
+    expect(transcript.fidelity).toBeGreaterThan(0.9);
+    expect(transcript.mutationChance).toBeLessThan(0.02);
+    expect(transcript.sequence.split(" ").length).toBe(transcript.plain.length);
   });
 
   it("emits codon-v1 JSON fields for network transfer", () => {

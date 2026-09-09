@@ -3,65 +3,9 @@ import {
   effectiveMutationChance,
 } from "./cell-types";
 import { encodeCodonStrand } from "./codons";
-import { createRng, hashSeed, pick, type Rng } from "./rng";
+import { createRng, hashSeed, type Rng } from "./rng";
 import type { CellType, MrnaTranscript, MutationEvent } from "./types";
-
-const TRANSITIONS: Record<string, string> = {
-  a: "g",
-  g: "a",
-  c: "u",
-  u: "c",
-  t: "c",
-  e: "i",
-  i: "e",
-  o: "u",
-  A: "G",
-  G: "A",
-  C: "T",
-  T: "C",
-  E: "I",
-  I: "E",
-  O: "U",
-};
-
-function tokenize(dna: string) {
-  return dna.match(/\s+|[^\s]+/g) ?? [dna];
-}
-
-function mutateToken(token: string, rng: Rng): { next: string; kind: MutationEvent["kind"] } {
-  if (/^\s+$/.test(token)) {
-    return { next: token, kind: "substitution" };
-  }
-
-  const roll = rng();
-  if (roll < 0.45) {
-    const chars = token.split("");
-    const idx = Math.floor(rng() * chars.length);
-    const current = chars[idx] ?? "a";
-    chars[idx] = TRANSITIONS[current] ?? String.fromCharCode(current.charCodeAt(0) + 1);
-    return { next: chars.join(""), kind: "substitution" };
-  }
-  if (roll < 0.7) {
-    const insert = pick(rng, ["aa", "ug", "poly", "Δ"]);
-    return { next: `${token}${insert}`, kind: "insertion" };
-  }
-  if (roll < 0.9) {
-    if (token.length <= 2) {
-      return { next: token.slice(0, 1), kind: "deletion" };
-    }
-    const start = Math.floor(rng() * (token.length - 1));
-    return { next: token.slice(0, start) + token.slice(start + 1), kind: "deletion" };
-  }
-  return { next: "", kind: "nonsense" };
-}
-
-function frameshiftFrom(tokens: string[], at: number) {
-  return tokens.map((token, index) => {
-    if (index < at || /^\s+$/.test(token)) return token;
-    const rotated = `${token.slice(1)}${token.slice(0, 1)}`;
-    return rotated.toLowerCase();
-  });
-}
+import { transcribeDnaToMrnaWithLesions } from "@/lib/transcription-biology";
 
 export type TranscribeInput = {
   dnaSeed: string;
@@ -71,6 +15,42 @@ export type TranscribeInput = {
   entropy?: string;
 };
 
+function lesionToMutation(
+  lesion: ReturnType<typeof transcribeDnaToMrnaWithLesions>["lesions"][number],
+  proofread: boolean,
+): MutationEvent {
+  if (lesion.kind === "point") {
+    return {
+      kind: "substitution",
+      position: lesion.index,
+      from: lesion.from,
+      to: proofread ? lesion.from : lesion.to,
+      proofread,
+    };
+  }
+  if (lesion.kind === "deletion") {
+    return {
+      kind: "deletion",
+      position: lesion.index,
+      from: lesion.from,
+      to: proofread ? lesion.from : "",
+      proofread,
+    };
+  }
+  return {
+    kind: lesion.kind === "insertion" ? "insertion" : "frameshift",
+    position: lesion.index,
+    from: "",
+    to: proofread ? "" : lesion.inserted,
+    proofread,
+  };
+}
+
+/**
+ * Build the network mRNA envelope. Character-level battering lives in
+ * {@link transcribeDnaToMrna} (`lib/transcription-biology.ts`); this wrapper
+ * attaches codon encoding, fidelity, and polymerase metadata.
+ */
 export function transcribeDnaToMrnaCore(input: TranscribeInput): MrnaTranscript {
   const dnaSeed = input.dnaSeed.trim();
   if (!dnaSeed) {
@@ -79,53 +59,73 @@ export function transcribeDnaToMrnaCore(input: TranscribeInput): MrnaTranscript 
 
   const polymeraseLevel = Math.min(3, Math.max(0, Math.floor(input.polymeraseLevel)));
   const mutationChance = effectiveMutationChance(input.senderCellType, polymeraseLevel);
+  const frameShiftChance = mutationChance * 0.4;
   const rng =
     input.rng ??
     createRng(hashSeed(`${dnaSeed}|${input.senderCellType}|${polymeraseLevel}|${input.entropy ?? ""}`));
 
-  const tokens = tokenize(dnaSeed);
+  const { mrna, lesions } = transcribeDnaToMrnaWithLesions(
+    dnaSeed,
+    mutationChance,
+    frameShiftChance,
+    rng,
+  );
+
+  // Residual exonuclease pass: high polymerase levels can still snap some lesions back.
+  const proofreadChance = polymeraseLevel > 0 ? 1 - 0.55 ** polymeraseLevel : 0;
   const mutations: MutationEvent[] = [];
-  const nextTokens = [...tokens];
+  let plain = mrna;
 
-  nextTokens.forEach((token, position) => {
-    if (/^\s+$/.test(token)) return;
-    if (rng() >= mutationChance) return;
-
-    const mutated = mutateToken(token, rng);
-    const corrected = polymeraseLevel > 0 && rng() < 1 - 0.55 ** polymeraseLevel;
-    mutations.push({
-      kind: mutated.kind,
-      position,
-      from: token,
-      to: corrected ? token : mutated.next,
-      proofread: corrected,
-    });
-    if (!corrected) {
-      nextTokens[position] = mutated.next;
+  if (proofreadChance > 0 && lesions.length > 0) {
+    // Re-synthesize from DNA, skipping lesions the clamp catches.
+    plain = "";
+    let lesionCursor = 0;
+    for (let index = 0; index < dnaSeed.length; index += 1) {
+      const char = dnaSeed[index] ?? "";
+      const lesion = lesions[lesionCursor];
+      if (lesion && lesion.index === index) {
+        lesionCursor += 1;
+        const corrected = rng() < proofreadChance;
+        mutations.push(lesionToMutation(lesion, corrected));
+        if (corrected) {
+          plain += char;
+          continue;
+        }
+        if (lesion.kind === "deletion") continue;
+        if (lesion.kind === "insertion") {
+          plain += char + lesion.inserted;
+          continue;
+        }
+        plain += lesion.to;
+        continue;
+      }
+      plain += char;
     }
-  });
-
-  if (rng() < mutationChance * 0.4 && nextTokens.length > 2) {
-    const at = Math.max(1, Math.floor(rng() * nextTokens.length));
-    const before = nextTokens.join("");
-    const shifted = frameshiftFrom(nextTokens, at);
-    const after = shifted.join("");
-    mutations.push({
-      kind: "frameshift",
-      position: at,
-      from: before,
-      to: after,
-      proofread: false,
-    });
-    shifted.forEach((token, index) => {
-      nextTokens[index] = token;
-    });
+    // Trailing lesions (should not happen) fall through.
+    while (lesionCursor < lesions.length) {
+      mutations.push(lesionToMutation(lesions[lesionCursor]!, false));
+      lesionCursor += 1;
+    }
+  } else {
+    for (const lesion of lesions) {
+      mutations.push(lesionToMutation(lesion, false));
+    }
   }
 
-  const plain = nextTokens.join("").replace(/\s+/g, " ").trim();
-  const meaningful = tokens.filter((token) => !/^\s+$/.test(token)).length;
+  plain = plain.replace(/\s+/g, " ").trim();
   const uncorrected = mutations.filter((event) => !event.proofread).length;
-  const fidelity = Math.max(0, 1 - uncorrected / Math.max(meaningful, 1));
+  const fidelity = Math.max(0, 1 - uncorrected / Math.max(dnaSeed.length, 1));
+
+  // Mark multi-base indel storms as frameshifts for downstream folding checks.
+  if (mutations.filter((event) => event.kind === "deletion" || event.kind === "insertion").length >= 2) {
+    mutations.push({
+      kind: "frameshift",
+      position: 0,
+      from: dnaSeed,
+      to: plain,
+      proofread: false,
+    });
+  }
 
   return {
     version: 1,

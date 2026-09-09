@@ -6,7 +6,17 @@ You type a DNA seed (exact intent). A server action transcribes it into an mRNA 
 
 This is a Next.js App Router scaffold with a Supabase schema, a demo lab store (no credentials required), and Vercel AI SDK placeholders.
 
-## Architecture
+## Biology
+
+Character-level transcription lives in `lib/transcription-biology.ts`:
+
+```ts
+import { transcribeDnaToMrna } from "@/lib/transcription-biology";
+
+const mrna = transcribeDnaToMrna(dna, 0.05, 0.01);
+```
+
+`transcribeDnaToMrnaCore` wraps that pass into the vesicle `mrna_transcript` JSON (codon strand, fidelity, lesion log).
 
 ```
 DNA seed  ──transcribeDnaToMrna──►  mRNA transcript (JSON on the wire)
