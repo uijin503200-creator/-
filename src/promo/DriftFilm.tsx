@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
-import { Hexagon } from 'lucide-react';
+import { Hexagon, Mail } from 'lucide-react';
 import { unlockWeatherAudio, startWeatherAmbience } from '../lib/weather-audio.ts';
 import './film.css';
 
@@ -18,14 +18,32 @@ const MAP_STYLES = [
 ];
 
 const BRIDGE = { lat: 51.5084, lng: -0.1169 };
+
 const NOTES = [
-  { id: 'focus', ...BRIDGE },
-  { id: 'n1', lat: 51.5062, lng: -0.1235 },
-  { id: 'n2', lat: 51.5114, lng: -0.1198 },
-  { id: 'n3', lat: 51.5071, lng: -0.1098 },
-  { id: 'n4', lat: 51.5108, lng: -0.1126 },
-  { id: 'n5', lat: 51.5049, lng: -0.1188 },
-  { id: 'n6', lat: 51.5099, lng: -0.1264 },
+  { id: 'c1', lat: 51.5084, lng: -0.1169, at: 34800 },
+  { id: 'c2', lat: 51.50815, lng: -0.11755, at: 35200 },
+  { id: 'c3', lat: 51.50872, lng: -0.11625, at: 35600 },
+  { id: 'c4', lat: 51.50795, lng: -0.11640, at: 36000 },
+  { id: 'c5', lat: 51.50888, lng: -0.11790, at: 36400 },
+  { id: 's1', lat: 51.5258, lng: -0.0804, at: 37200 },
+  { id: 's2', lat: 51.5264, lng: -0.0816, at: 37600 },
+  { id: 's3', lat: 51.5252, lng: -0.0791, at: 38000 },
+  { id: 'n1', lat: 51.5390, lng: -0.1426, at: 38400 },
+  { id: 'n2', lat: 51.5552, lng: -0.1784, at: 38800 },
+  { id: 'n3', lat: 51.5157, lng: -0.2058, at: 39200 },
+  { id: 'n4', lat: 51.4874, lng: -0.1682, at: 39600 },
+  { id: 'n5', lat: 51.4791, lng: -0.1446, at: 40000 },
+  { id: 'n6', lat: 51.4826, lng: -0.0077, at: 40400 },
+  { id: 'n7', lat: 51.5054, lng: -0.0235, at: 40800 },
+  { id: 'n8', lat: 51.4994, lng: -0.1276, at: 41200 },
+  { id: 'n9', lat: 51.5073, lng: -0.1657, at: 41600 },
+  { id: 'n10', lat: 51.5079, lng: -0.0877, at: 42000 },
+  { id: 'n11', lat: 51.4613, lng: -0.1156, at: 42400 },
+  { id: 'n12', lat: 51.5308, lng: -0.1238, at: 42800 },
+  { id: 'n13', lat: 51.5136, lng: -0.1365, at: 43200 },
+  { id: 'n14', lat: 51.4941, lng: -0.1742, at: 43600 },
+  { id: 'n15', lat: 51.4740, lng: -0.0694, at: 44000 },
+  { id: 'n16', lat: 51.5081, lng: -0.0759, at: 44400 },
 ];
 
 function clamp(v: number, a = 0, b = 1) {
@@ -65,27 +83,29 @@ export default function DriftFilm() {
   useEffect(() => {
     if (hold) return undefined;
     unlockWeatherAudio();
-    const origin = performance.now();
+    const seek = Number(new URLSearchParams(window.location.search).get('seek') || 0);
+    const origin = performance.now() - seek;
     let frame = 0;
     const tick = (now: number) => {
       setT(now - origin);
-      if (now - origin < 82000) frame = requestAnimationFrame(tick);
+      if (now - origin < 94000) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [hold]);
 
   useEffect(() => {
-    if (t < 47800) return undefined;
+    if (t < 58500) return undefined;
     const ambience = startWeatherAmbience('Rain', 'Night');
     return () => ambience.stop();
-  }, [t >= 47800]);
+  }, [t >= 58500]);
 
   const showTablet = t < 20500;
   const showAuth = t >= 16800 && t < 30500;
-  const showMap = t >= 20000 && t < 49000;
-  const showReader = t >= 46800 && t < 68000;
-  const showEnd = t >= 65500;
+  const showMap = t >= 20000 && t < 60500;
+  const showRadar = t >= 50500 && t < 60500;
+  const showReader = t >= 58500 && t < 79000;
+  const showEnd = t >= 76500;
 
   const tabletY = lerp(0, 4.2, easeInOut(span(t, 400, 16000)));
   const tabletScale = t < 14500 ? 1 : lerp(1, 1.38, easeInOut(span(t, 14500, 18800)));
@@ -97,32 +117,30 @@ export default function DriftFilm() {
   const authZoom = lerp(1, 1.12, easeInOut(span(t, 22800, 27200)));
   const enterHot = t >= 26800 && t < 29600;
 
-  const mapOpacity = span(t, 29200, 30800) * (1 - span(t, 46800, 48600));
+  const mapOpacity = span(t, 29200, 30800) * (1 - span(t, 58800, 60400));
   const mapZoom =
     t < 32800 ? 16.7 :
-    t < 38800 ? lerp(16.7, 12.85, easeInOut(span(t, 32800, 38800))) :
-    t < 41800 ? 12.85 :
-    lerp(12.85, 16.55, easeInOut(span(t, 41800, 45800)));
-  const mapLat = t < 41800 ? BRIDGE.lat : lerp(BRIDGE.lat, BRIDGE.lat + 0.00032, span(t, 41800, 45800));
-  const visiblePins = t < 34800
-    ? 0
-    : t < 41800
-      ? Math.min(NOTES.length, 1 + Math.floor(span(t, 34800, 40800) * NOTES.length))
-      : NOTES.length;
+    t < 40200 ? lerp(16.7, 11.15, easeInOut(span(t, 32800, 40200))) :
+    t < 45800 ? 11.15 :
+    lerp(11.15, 16.4, easeInOut(span(t, 45800, 50800)));
+  const pinOpacity = 1 - span(t, 50800, 52800);
+  const mapWash = showRadar ? lerp(1, 0.55, span(t, 50500, 52800)) : 1;
 
-  const readerOpacity = span(t, 47200, 48800) * (1 - span(t, 65500, 67600));
-  const endOpacity = span(t, 66200, 68800);
+  const readerOpacity = span(t, 58800, 60400) * (1 - span(t, 76500, 78600));
+  const radarOpacity = span(t, 51200, 53200) * (1 - span(t, 58800, 60400));
+  const endOpacity = span(t, 77200, 79800);
+  const mailHot = t >= 54800 && t < 58200;
 
-  const cursorVisible = (t >= 23800 && t < 29800) || (t >= 43200 && t < 47800);
-  const cursorDown = (t >= 27800 && t < 28700) || (t >= 45800 && t < 47000);
+  const cursorVisible = (t >= 23800 && t < 29800) || (t >= 53800 && t < 59000);
+  const cursorDown = (t >= 27800 && t < 28700) || (t >= 56400 && t < 57600);
   const cursor = useMemo(() => {
     if (t >= 23800 && t < 29800) {
       const u = easeInOut(span(t, 23800, 27400));
       return { x: lerp(66, 50, u), y: lerp(76, 71.4, u) };
     }
-    if (t >= 43200 && t < 47800) {
-      const u = easeInOut(span(t, 43200, 45600));
-      return { x: lerp(78, 50, u), y: lerp(28, 49.5, u) };
+    if (t >= 53800 && t < 59000) {
+      const u = easeInOut(span(t, 53800, 56000));
+      return { x: lerp(72, 50, u), y: lerp(26, 42.5, u) };
     }
     return { x: 50, y: 50 };
   }, [t]);
@@ -145,11 +163,15 @@ export default function DriftFilm() {
     t < 23500 ? '' :
     t < 29200 ? 'Unseen stories, waiting where you left them.' :
     t < 34800 ? 'Physical space is the only feed.' :
-    t < 43000 ? 'Notes wait within 15 meters.' :
-    t < 47800 ? '' :
-    t < 56000 ? '' :
-    t < 65500 ? 'You are never alone here.' :
+    t < 50000 ? 'Notes wait within 15 meters.' :
+    t < 58800 ? '' :
+    t < 68000 ? '' :
+    t < 76500 ? 'You are never alone here.' :
     '';
+
+  const noteText = t > 70000
+    ? 'You are never alone here. The world is filled with unseen thoughts.'
+    : 'If you found this, you were looking. Stay a little longer.';
 
   if (hold) {
     return <div className="film-root" />;
@@ -202,28 +224,48 @@ export default function DriftFilm() {
 
       {showMap && mapKey && (
         <div className="film-layer" style={{ opacity: mapOpacity }}>
-          <APIProvider apiKey={mapKey}>
-            <Map
-              style={{ width: '100%', height: '100%' }}
-              defaultCenter={BRIDGE}
-              center={{ lat: mapLat, lng: BRIDGE.lng }}
-              defaultZoom={16.7}
-              zoom={mapZoom}
-              styles={MAP_STYLES}
-              disableDefaultUI
-              gestureHandling="none"
-              keyboardShortcuts={false}
-            >
-              {NOTES.slice(0, visiblePins).map((note) => (
-                <Marker
-                  key={note.id}
-                  position={{ lat: note.lat, lng: note.lng }}
-                  icon={note.id === 'focus' && t > 43800 ? '/promo/mail-pin.svg' : '/promo/pin.svg'}
-                />
-              ))}
-            </Map>
-          </APIProvider>
+          <div className="absolute inset-0" style={{ opacity: mapWash }}>
+            <APIProvider apiKey={mapKey}>
+              <Map
+                style={{ width: '100%', height: '100%' }}
+                defaultCenter={BRIDGE}
+                center={BRIDGE}
+                defaultZoom={16.7}
+                zoom={mapZoom}
+                styles={MAP_STYLES}
+                disableDefaultUI
+                gestureHandling="none"
+                keyboardShortcuts={false}
+              >
+                {NOTES.filter((note) => t >= note.at && pinOpacity > 0.02).map((note) => (
+                  <Marker
+                    key={note.id}
+                    position={{ lat: note.lat, lng: note.lng }}
+                    icon="/promo/pin.svg"
+                  />
+                ))}
+              </Map>
+            </APIProvider>
+          </div>
           <div className="film-vignette" />
+        </div>
+      )}
+
+      {showRadar && (
+        <div className="film-layer film-radar" style={{ opacity: radarOpacity }}>
+          <div className="film-radar-core">
+            <span className="film-radar-ring" />
+            <span className="film-radar-ring" style={{ animationDelay: '2s' }} />
+            <div className={`film-mail-orb ${mailHot ? 'hot' : ''}`}>
+              <Mail size={32} strokeWidth={1} className="text-zinc-200" />
+            </div>
+          </div>
+          <div className="film-radar-copy">
+            <h2>Presence Detected</h2>
+            <p>A note has drifted within 15 meters.</p>
+            <span>51.50840, -0.11690 · gps</span>
+          </div>
+          <div className="film-drop-btn">Drop</div>
         </div>
       )}
 
@@ -242,22 +284,20 @@ export default function DriftFilm() {
               }}
             />
           ))}
-          {t > 51200 && <p className="film-whisper">left in the rain, after dark</p>}
+          {t > 62800 && <p className="film-whisper">left in the rain, after dark</p>}
           <div className="film-letter">
             <span className="film-handle" />
-            <p className="film-paper">
-              {t > 59000
-                ? 'You are never alone here. The world is filled with unseen thoughts.'
-                : 'If you found this, you were looking. Stay a little longer.'}
-            </p>
-            {t > 61800 && (
-              <div className="film-echo">
-                <span>1</span>
-                <em>Echo</em>
+            <p className="film-paper">“{noteText}”</p>
+            {t > 71800 && (
+              <div className="film-echo-row">
+                <div className="film-echo">
+                  <span>0</span>
+                  <em>Echo</em>
+                </div>
               </div>
             )}
           </div>
-          {t > 63200 && <p className="film-walk">Walk Away</p>}
+          {t > 71800 && <p className="film-walk">Walk Away</p>}
         </div>
       )}
 
@@ -268,8 +308,8 @@ export default function DriftFilm() {
         </div>
       )}
 
-      {caption && t < 65500 && (
-        <div className="film-caption" style={{ opacity: showReader && t > 51800 ? 0 : 1 }}>
+      {caption && t < 76500 && (
+        <div className="film-caption" style={{ opacity: (showReader && t > 62800) || showRadar ? 0 : 1 }}>
           {caption}
         </div>
       )}

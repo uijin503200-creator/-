@@ -167,6 +167,106 @@
   box-shadow: 0 0 40px rgba(255,255,255,0.16);
 }
 
+.film-radar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.film-radar-core {
+  position: relative;
+  width: 8rem;
+  height: 8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.film-radar-ring {
+  position: absolute;
+  inset: 50%;
+  width: 24rem;
+  height: 24rem;
+  margin: -12rem 0 0 -12rem;
+  border-radius: 999px;
+  border: 1px solid rgba(228, 228, 231, 0.28);
+  animation: film-ring 4s ease-out infinite;
+}
+
+.film-mail-orb {
+  position: relative;
+  z-index: 2;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 999px;
+  border: 1px solid #3f3f46;
+  background: #09090b;
+  box-shadow: 0 0 50px rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: film-mail-breathe 3s ease-in-out infinite;
+}
+
+.film-mail-orb.hot {
+  border-color: #a1a1aa;
+  box-shadow: 0 0 50px rgba(255, 255, 255, 0.22);
+}
+
+.film-radar-copy {
+  position: relative;
+  z-index: 2;
+  margin-top: 3rem;
+  text-align: center;
+}
+
+.film-radar-copy h2 {
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  font-weight: 400;
+}
+
+.film-radar-copy p {
+  margin-top: 8px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: #52525b;
+  font-weight: 300;
+}
+
+.film-radar-copy span {
+  display: block;
+  margin-top: 10px;
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+  color: #52525b;
+}
+
+.film-drop-btn {
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5rem;
+  height: 5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(39, 39, 42, 0.8);
+  background: rgba(9, 9, 11, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #d4d4d8;
+  font-weight: 300;
+}
+
 .film-reader {
   background: #070b16;
   display: flex;
@@ -193,43 +293,51 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 560px;
-  padding: 0 32px;
+  width: 100%;
+  max-width: 28rem;
+  padding: 2rem 2rem 4rem;
 }
 
 .film-handle {
-  width: 48px;
+  width: 3rem;
   height: 4px;
   border-radius: 999px;
-  background: rgba(63, 63, 70, 0.7);
-  margin-bottom: 48px;
+  background: rgba(63, 63, 70, 0.4);
+  margin-bottom: 3rem;
 }
 
 .film-paper {
+  width: 100%;
   text-align: center;
   font-family: "Playfair Display", serif;
-  font-size: 32px;
+  font-size: 30px;
   line-height: 1.45;
   color: #dbe7ff;
   text-shadow: 0 0 24px rgba(160, 190, 255, 0.35);
 }
 
+.film-echo-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 3rem;
+  padding-top: 3rem;
+  border-top: 1px solid #18181b;
+}
+
 .film-echo {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 56px;
-  padding-top: 28px;
-  border-top: 1px solid #18181b;
+  justify-content: center;
+  gap: 1rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  font-size: 12px;
-  color: #a1a1aa;
-  font-style: normal;
 }
 
 .film-echo span {
   font-size: 10px;
+  line-height: 1;
   color: #3f3f46;
   letter-spacing: 0.2em;
 }
@@ -237,17 +345,24 @@
 .film-echo em {
   font-style: normal;
   font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 300;
+  line-height: 1;
+  color: #52525b;
 }
 
 .film-walk {
   position: absolute;
-  bottom: 10%;
-  left: 0;
-  right: 0;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
   text-align: center;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   font-size: 10px;
+  font-weight: 300;
+  line-height: 1;
   color: #71717a;
   z-index: 4;
 }
@@ -288,6 +403,11 @@
 @keyframes film-ring {
   from { transform: scale(1); opacity: 0.8; }
   to { transform: scale(3.6); opacity: 0; }
+}
+
+@keyframes film-mail-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 @keyframes weather-ghost-fall {
