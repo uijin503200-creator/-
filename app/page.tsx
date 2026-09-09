@@ -16,14 +16,14 @@ export default async function HomePage({
     <div className="relative min-h-dvh">
       <CytoplasmBackdrop />
       <MicroscopeStage>
-        <p className="text-[11px] uppercase tracking-[0.32em] text-primary/80">Specimen intake</p>
-        <h1 className="mt-2 max-w-xl font-display text-5xl leading-tight sm:text-6xl">
+        <p className="font-display text-6xl leading-none tracking-tight text-primary sm:text-7xl md:text-8xl">
+          Central Dogma
+        </p>
+        <h1 className="mt-5 max-w-xl text-lg font-medium leading-snug text-foreground/90 sm:text-xl">
           A messenger that mutates in transit.
         </h1>
-        <p className="mt-4 max-w-2xl text-muted-foreground">
-          You write DNA — the exact intent. Transcription packages it as mRNA for the network.
-          The recipient ribosome translates that transcript into a Protein. Cell type, polymerase
-          fidelity, and chaperones decide whether it folds.
+        <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+          Write DNA. Transcription ships mRNA. The recipient ribosome folds the Protein — if it can.
         </p>
         {params.error && <p className="mt-4 text-sm text-misfold">{params.error}</p>}
         {profile && (
