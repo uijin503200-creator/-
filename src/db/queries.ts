@@ -1,6 +1,6 @@
 import { db } from './index.ts';
 import { users, notes } from './schema.ts';
-import { eq, sql, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { addDays, addHours, isAfter } from 'date-fns';
 
@@ -38,40 +38,67 @@ export async function dropNote(userId: string, latitude: number, longitude: numb
   });
 }
 
+function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const toRad = (value: number) => value * Math.PI / 180;
+  const R = 6371e3;
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lng2 - lng1);
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+const SEED_NOTE_ID = 'seed-note-mission-district';
+const SEED_USER_ID = 'seed-wanderer';
+
+export async function moveSeedNoteTo(latitude: number, longitude: number) {
+  await db.insert(users)
+    .values({ id: SEED_USER_ID, email: 'wanderer@drift.local', pagesLeft: 3 })
+    .onConflictDoNothing();
+
+  const existing = await db.select().from(notes).where(eq(notes.id, SEED_NOTE_ID)).limit(1);
+  if (existing.length === 0) {
+    await db.insert(notes).values({
+      id: SEED_NOTE_ID,
+      userId: SEED_USER_ID,
+      latitude,
+      longitude,
+      content: 'If you found this, you were looking. Stay a little longer.',
+      isDormant: true,
+      echoCount: 0,
+    });
+    return;
+  }
+
+  if (distanceMeters(latitude, longitude, existing[0].latitude, existing[0].longitude) > 15) {
+    await db.update(notes)
+      .set({ latitude, longitude })
+      .where(eq(notes.id, SEED_NOTE_ID));
+  }
+}
+
 export async function getNearbyNotes(latitude: number, longitude: number, currentUserId: string) {
-  // We use Haversine formula in SQL.
-  // Earth radius in meters is approx 6371000
-  // 15 meters radius
+  if (process.env.DEV_AUTH_BYPASS === 'true') {
+    await moveSeedNoteTo(latitude, longitude);
+  }
+
   const allNotes = await db.select().from(notes);
   
   const now = new Date();
-  
-  // Filter and calculate distance in TS for simplicity, or SQL. Let's do TS since the dataset is small for this prototype.
-  const toRad = (value: number) => value * Math.PI / 180;
-  
+
   const validNotes = allNotes.filter(note => {
-    // Check decay
     if (!note.isDormant && note.firstReadAt) {
       const decayTime = addDays(addHours(note.firstReadAt, 24), note.echoCount * 7);
       if (isAfter(now, decayTime)) {
-        return false; // Decayed
+        return false;
       }
     }
-    
-    // Check distance (Haversine)
-    const R = 6371e3; // metres
-    const φ1 = toRad(latitude);
-    const φ2 = toRad(note.latitude);
-    const Δφ = toRad(note.latitude - latitude);
-    const Δλ = toRad(note.longitude - longitude);
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c;
-
-    return distance <= 15;
+    return distanceMeters(latitude, longitude, note.latitude, note.longitude) <= 15;
   });
   
   return validNotes;

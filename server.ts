@@ -83,6 +83,35 @@ async function startServer() {
     }
   });
 
+  app.get("/api/geo/live", async (_req, res) => {
+    try {
+      const response = await fetch("https://ipinfo.io/json", {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) {
+        res.status(502).json({ error: "Live location unavailable" });
+        return;
+      }
+      const data = await response.json();
+      const [lat, lng] = String(data.loc || "").split(",").map(Number);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        res.status(502).json({ error: "Live location unavailable" });
+        return;
+      }
+      res.json({
+        lat,
+        lng,
+        city: data.city,
+        region: data.region,
+        country: data.country,
+        source: "ip",
+      });
+    } catch (error: any) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // --- VITE MIDDLEWARE ---
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

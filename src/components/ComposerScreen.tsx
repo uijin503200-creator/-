@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { X, Send } from 'lucide-react';
 import { User } from '../types.ts';
+import { LiveFix, requestLiveLocation } from '../lib/live-location.ts';
 
 interface ComposerProps {
   user: User;
@@ -14,24 +15,16 @@ export default function ComposerScreen({ user, token, onClose, onDropped }: Comp
   const [content, setContent] = useState('');
   const [isDropping, setIsDropping] = useState(false);
   const [error, setError] = useState('');
-  const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [location, setLocation] = useState<LiveFix | null>(null);
 
   useEffect(() => {
-    const demoLat = Number(import.meta.env.VITE_DEV_DEFAULT_LAT);
-    const demoLng = Number(import.meta.env.VITE_DEV_DEFAULT_LNG);
-    if (Number.isFinite(demoLat) && Number.isFinite(demoLng)) {
-      setLocation({ lat: demoLat, lng: demoLng });
-      return;
-    }
-
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setError("Location required to drop a note.")
-      );
-    } else {
-      setError("Location required to drop a note.");
-    }
+    return requestLiveLocation({
+      onFix: (fix) => {
+        setLocation(fix);
+        setError('');
+      },
+      onError: () => setError("Location required to drop a note."),
+    });
   }, []);
 
   const handleDrop = async () => {

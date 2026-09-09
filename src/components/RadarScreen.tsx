@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, PenLine, Navigation, Mail } from 'lucide-react';
+import { Compass, Mail } from 'lucide-react';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import { Note, User } from '../types.ts';
+import { LiveFix, watchLiveLocation } from '../lib/live-location.ts';
 
 interface RadarProps {
   user: User;
@@ -25,16 +26,15 @@ const mapStyles = [
 ];
 
 export default function RadarScreen({ user, token, onCompose, onRead }: RadarProps) {
-  const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+  const [location, setLocation] = useState<LiveFix | null>(null);
   const [error, setError] = useState<string>('');
   const [nearbyNotes, setNearbyNotes] = useState<Note[]>([]);
   const [scanning, setScanning] = useState(true);
   
   const knownNoteIds = useRef<Set<string>>(new Set());
+  const locationRef = useRef<LiveFix | null>(null);
 
   useEffect(() => {
-    let watchId: number;
-
     const scanForNotes = async (lat: number, lng: number) => {
       try {
         const res = await fetch(`/api/notes/nearby?lat=${lat}&lng=${lng}`, {
@@ -52,7 +52,6 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
           });
 
           if (hasNewNote) {
-            // Trigger double heartbeat haptic vibration
             if ('vibrate' in navigator) {
               navigator.vibrate([100, 100, 100]);
             }
@@ -65,42 +64,32 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
       }
     };
 
-    const demoLat = Number(import.meta.env.VITE_DEV_DEFAULT_LAT);
-    const demoLng = Number(import.meta.env.VITE_DEV_DEFAULT_LNG);
-    const useDemoLocation = Number.isFinite(demoLat) && Number.isFinite(demoLng);
-
-    if (useDemoLocation) {
-      setLocation({ lat: demoLat, lng: demoLng });
-      setError('');
-      scanForNotes(demoLat, demoLng);
-    } else if ("geolocation" in navigator) {
-      watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocation({ lat: latitude, lng: longitude });
-          setError('');
-          scanForNotes(latitude, longitude);
-        },
-        () => {
-          setError('Location access required for Drift to function.');
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-      );
-    } else {
-      setError('Geolocation is not supported by your browser.');
-    }
+    const stopWatch = watchLiveLocation({
+      onFix: (fix) => {
+        locationRef.current = fix;
+        setLocation(fix);
+        setError('');
+        setScanning(true);
+        void scanForNotes(fix.lat, fix.lng);
+      },
+      onError: (message) => {
+        setError(message);
+        setScanning(false);
+      },
+    });
 
     const interval = setInterval(() => {
-      if (location) {
-        scanForNotes(location.lat, location.lng);
+      const current = locationRef.current;
+      if (current) {
+        void scanForNotes(current.lat, current.lng);
       }
-    }, 10000); // Poll every 10s as a fallback
+    }, 10000);
 
     return () => {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
+      stopWatch();
       clearInterval(interval);
     };
-  }, [token, location?.lat, location?.lng]);
+  }, [token]);
 
   const discoveredNote = nearbyNotes.find((note) => note.userId !== user.id) ?? nearbyNotes[0];
   const hasNotes = Boolean(discoveredNote);
@@ -118,6 +107,7 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
           {location && mapKey && (
             <APIProvider apiKey={mapKey}>
               <Map
+                key={`${location.lat.toFixed(3)},${location.lng.toFixed(3)}`}
                 defaultZoom={17}
                 defaultCenter={location}
                 center={location}
@@ -168,13 +158,18 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
               )}
             </div>
             
-            <div className="text-center space-y-2 h-16">
+            <div className="text-center space-y-2 min-h-16">
               <h2 className="text-zinc-400 text-sm tracking-widest uppercase">
                 {hasNotes ? 'Presence Detected' : 'Scanning'}
               </h2>
               <p className="text-zinc-600 text-xs font-light tracking-wide">
                 {hasNotes ? 'A note has drifted within 15 meters.' : 'Walk to discover dormant notes.'}
               </p>
+              {location && (
+                <p className="text-[10px] text-zinc-600 font-mono tracking-wide pt-2">
+                  {location.lat.toFixed(5)}, {location.lng.toFixed(5)} · {location.source}
+                </p>
+              )}
             </div>
 
           </div>

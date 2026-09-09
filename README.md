@@ -21,3 +21,5 @@ View your app in AI Studio: https://ai.studio/apps/f9e4c8aa-d493-4be3-856c-b762d
    `npm run dev`
 
 Open http://localhost:3000. With `DEV_AUTH_BYPASS` and `VITE_DEV_AUTH_BYPASS` set, Enter skips Google sign-in so the radar/composer flow can be used locally.
+
+Allow location when the browser asks. The radar follows live GPS (or network/IP location if the device has no GPS chip).
