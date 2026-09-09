@@ -24,8 +24,8 @@ DNA seed  ──transcribeDnaToMrna──►  mRNA transcript (JSON on the wire)
 | --- | --- | --- |
 | Schema | `supabase/schema.sql` | Profiles (cell types), vesicles, IAP catalog, RLS, purchase/chaperone RPCs |
 | Biology | `lib/biology/` | Mutation chance, codon encoding, folding, chaperone refold |
-| Ribosome (LLM) | `lib/ai/ribosome.ts` | `generateText` via Vercel AI SDK when `OPENAI_API_KEY` is set |
-| Actions | `app/actions/` | `transcribeDnaToMrna`, `translateMrnaToProtein`, IAP |
+| Ribosome prompt | `lib/ai/ribosome.ts` | Detailed per-`cell_type` system prompt, model id, temperature |
+| Actions | `app/actions/` | `transcribeDnaToMrna`, `translateMrnaToProtein`, `translateVesicle`, IAP |
 | UI | `app/(lab)/`, `components/lab/` | Microscope feed, cytoplasm inbox, IAP store |
 
 ### Cell types
@@ -60,14 +60,31 @@ The demo repository is the default so the UI works without a project. Auth-backe
 
 ## Vercel AI SDK
 
-`translateMrnaToProtein` calls `decodeWithLlmRibosome`. Without `OPENAI_API_KEY` it uses the local ribosome simulator. With a key:
+`translateMrnaToProtein(mrna_transcript, cell_type)` is a server action that calls `generateText` from the `ai` package against the OpenAI provider (`gpt-4o-mini`) and returns the Protein string:
+
+```ts
+import { translateMrnaToProtein } from "@/app/actions/translate";
+
+const protein = await translateMrnaToProtein(mrnaTranscript, "oncogenic");
+```
+
+`mrna_transcript` accepts the plain transcript text or a serialized transcript envelope. `cell_type` selects the ribosome profile that drives LLM variability — the system prompt and sampling temperature change per cell:
+
+| `cell_type` | Temperature | Ribosome behavior |
+| --- | --- | --- |
+| `epithelial` | 0.35 | Faithful; only synonymous drift |
+| `macrophage` | 0.18 | Terse, suspicious; may quarantine a damaged transcript |
+| `oncogenic` | 1.15 | Noisy, truncated, cryptic splice variants |
+
+Unknown cell types decode as `epithelial`. Enable it with:
 
 ```
 OPENAI_API_KEY=sk-...
-OPENAI_RIBOSOME_MODEL=gpt-4o-mini
 ```
 
-Temperature and system prompt follow the recipient `cell_type`.
+Without a key the action falls back to the deterministic local ribosome so the lab still runs offline. Edit the prompt in one place: `buildRibosomeSystemPrompt` in `lib/ai/ribosome.ts`.
+
+`translateVesicle(vesicleId)` wraps the action for the stored-message pipeline, persisting `protein_result`, `is_misfolded`, and latency.
 
 ## IAP
 

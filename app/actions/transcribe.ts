@@ -6,7 +6,7 @@ import { requireSessionCell } from "@/lib/data";
 import type { Vesicle } from "@/lib/data/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { translateMrnaToProtein } from "./translate";
+import { translateVesicle } from "./translate";
 
 export type TranscribeResult =
   | { ok: true; vesicle: Vesicle }
@@ -75,7 +75,7 @@ export async function sendVesicle(formData: FormData): Promise<void> {
     return;
   }
 
-  const translated = await translateMrnaToProtein(transcribed.vesicle.id);
+  const translated = await translateVesicle(transcribed.vesicle.id);
   if (!translated.ok) {
     redirect(`/compose?error=${encodeURIComponent(translated.error)}`);
     return;
