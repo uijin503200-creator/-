@@ -43,6 +43,7 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
 
     const scanForNotes = async (lat: number, lng: number) => {
       try {
+        if (token === 'demo') return;
         const res = await fetch(`/api/notes/nearby?lat=${lat}&lng=${lng}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -102,6 +103,7 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
   useEffect(() => {
     const scanForNotes = async (lat: number, lng: number) => {
       try {
+        if (token === 'demo') return;
         const res = await fetch(`/api/notes/nearby?lat=${lat}&lng=${lng}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -139,7 +141,6 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
             <Map
               defaultZoom={16}
               center={location}
-              tilt={45}
               styles={mapStyles}
               disableDefaultUI={true}
               keyboardShortcuts={false}
