@@ -191,3 +191,4 @@ begin
   return deleted_count;
 end;
 $$;
+-- Also see supabase/drifts.sql for the drifts table + drop_drift RPC.

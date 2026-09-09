@@ -34,6 +34,8 @@ cp .env.example .env
 
 Schedule `select public.purge_expired_notes();` (pg_cron or Edge Function) to permanently delete decayed notes.
 
+Also run `supabase/drifts.sql` for the `drifts` table and `drop_drift` RPC (PostGIS `location` via `ST_MakePoint`).
+
 ## Mechanics
 
 | Rule | Behavior |

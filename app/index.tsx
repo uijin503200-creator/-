@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DriftMap } from '@/components/DriftMap';
+import { DropDriftModal } from '@/components/DropDriftModal';
 import { FadeIn } from '@/components/FadeIn';
 import { GhostButton } from '@/components/GhostButton';
 import { PagesMeter } from '@/components/PagesMeter';
@@ -12,13 +13,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useHeartbeat } from '@/hooks/useHeartbeat';
 import { useLocation } from '@/hooks/useLocation';
 import { useNotes } from '@/hooks/useNotes';
+import { dropDrift } from '@/lib/drifts';
 import { formatRemaining, remainingLifeMs } from '@/lib/decay';
 import { withinDiscovery } from '@/lib/notes-service';
 import { palette, typography } from '@/lib/theme';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, loading: authLoading, demoMode } = useAuth();
+  const { userId, profile, loading: authLoading, demoMode, refreshProfile } = useAuth();
   const {
     coords,
     permission,
@@ -29,10 +31,13 @@ export default function HomeScreen() {
     walkToward,
     hardResetDemo,
   } = useLocation();
-  const { notes, loading: notesLoading } = useNotes();
+  const { notes, loading: notesLoading, refresh } = useNotes();
   useHeartbeat(notes);
 
   const [asking, setAsking] = useState(false);
+  const [dropOpen, setDropOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [dropError, setDropError] = useState<string | null>(null);
 
   const discoverable = useMemo(
     () => notes.filter((n) => withinDiscovery(n.distanceMeters)),
@@ -42,6 +47,7 @@ export default function HomeScreen() {
   const inRange = discoverable.length > 0;
   const granted = permission === Location.PermissionStatus.GRANTED;
   const denied = permission === Location.PermissionStatus.DENIED;
+  const pagesLeft = profile?.pages ?? 0;
 
   const onAllowLocation = async () => {
     setAsking(true);
@@ -49,6 +55,22 @@ export default function HomeScreen() {
       await requestPermission();
     } finally {
       setAsking(false);
+    }
+  };
+
+  const onSubmitDrift = async (content: string) => {
+    if (!userId) return;
+    setSubmitting(true);
+    setDropError(null);
+    try {
+      await dropDrift(userId, content, coords);
+      await refreshProfile();
+      await refresh();
+      setDropOpen(false);
+    } catch (e) {
+      setDropError(e instanceof Error ? e.message : 'The Drift slipped away.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -61,7 +83,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Permission gate — ask on the main screen before showing the map.
   if (!granted && !coords) {
     return (
       <View style={[styles.boot, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 }]}>
@@ -99,7 +120,6 @@ export default function HomeScreen() {
     );
   }
 
-  // If still no coords after grant/demo, wait briefly.
   if (!coords) {
     return (
       <View style={styles.boot}>
@@ -114,10 +134,13 @@ export default function HomeScreen() {
       <DriftMap coords={coords} />
 
       <View
-        style={[styles.overlay, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}
+        style={[styles.overlay, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 28 }]}
         pointerEvents="box-none">
         <FadeIn>
           <Text style={styles.brandOverlay}>Drift</Text>
+          <View style={styles.pagesTop}>
+            <PagesMeter pages={pagesLeft} />
+          </View>
         </FadeIn>
 
         <View style={styles.middle} pointerEvents="box-none">
@@ -148,14 +171,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <FadeIn delay={160} style={styles.footer}>
-          <PagesMeter pages={profile?.pages ?? 0} />
-          <GhostButton
-            label="Leave a note"
-            onPress={() => router.push('/drop')}
-            disabled={(profile?.pages ?? 0) <= 0}
-            style={styles.cta}
-          />
+        <View style={styles.footer} pointerEvents="box-none">
           {(demoMode || usingDemoLocation) && closest && !inRange ? (
             <GhostButton
               label="Walk toward nearest"
@@ -167,6 +183,22 @@ export default function HomeScreen() {
           {!granted ? (
             <GhostButton label="Allow location" variant="ghost" onPress={onAllowLocation} />
           ) : null}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Drop a Drift"
+            disabled={pagesLeft <= 0}
+            onPress={() => {
+              setDropError(null);
+              setDropOpen(true);
+            }}
+            style={({ pressed }) => [
+              styles.dropFab,
+              (pagesLeft <= 0 || pressed) && styles.dropFabDim,
+            ]}>
+            <Text style={styles.dropLabel}>Drop</Text>
+          </Pressable>
+
           {usingDemoLocation ? (
             <Pressable
               onPress={async () => {
@@ -177,8 +209,19 @@ export default function HomeScreen() {
               <Text style={styles.demoHint}>{locError ?? 'Demo location'} · reset plaza</Text>
             </Pressable>
           ) : null}
-        </FadeIn>
+        </View>
       </View>
+
+      <DropDriftModal
+        visible={dropOpen}
+        pagesLeft={pagesLeft}
+        submitting={submitting}
+        error={dropError}
+        onClose={() => {
+          if (!submitting) setDropOpen(false);
+        }}
+        onSubmit={onSubmitDrift}
+      />
     </View>
   );
 }
@@ -218,6 +261,10 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,
+  },
+  pagesTop: {
+    marginTop: 14,
+    alignItems: 'center',
   },
   permissionBlock: {
     gap: 14,
@@ -285,13 +332,28 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    gap: 18,
-  },
-  cta: {
-    minWidth: 200,
+    gap: 16,
   },
   demoBtn: {
     minWidth: 220,
+  },
+  dropFab: {
+    minWidth: 120,
+    paddingVertical: 16,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: palette.paper,
+  },
+  dropFabDim: {
+    opacity: 0.35,
+  },
+  dropLabel: {
+    fontFamily: typography.bodyMedium,
+    fontSize: 15,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    color: palette.paper,
   },
   demoHint: {
     fontFamily: typography.body,
