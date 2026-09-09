@@ -44,6 +44,44 @@ describe("translateMrnaToProteinCore", () => {
     expect(protein.protein).toMatch(/MISFOLDED/);
   });
 
+  it("forces a misfold when the LLM ribosome emits [MISFOLD_DETECTED]", () => {
+    const transcript = transcribeDnaToMrnaCore({
+      dnaSeed: "deliver the signal to the nucleus",
+      senderCellType: "epithelial",
+      polymeraseLevel: 3,
+      rng: createRng(11),
+    });
+    const protein = translateMrnaToProteinCore({
+      transcript,
+      recipientCellType: "epithelial",
+      llmProtein: "deliver the sig[MISFOLD_DETECTED]nal to the nucle",
+      rng: createRng(11),
+    });
+
+    expect(protein.isMisfolded).toBe(true);
+    // The ribosome's own string is preserved rather than re-wrapped locally.
+    expect(protein.protein).toBe("deliver the sig[MISFOLD_DETECTED]nal to the nucle");
+    expect(protein.notes.join(" ")).toContain("forced a misfold");
+  });
+
+  it("leaves a clean LLM protein untouched by the offline drift simulator", () => {
+    const transcript = transcribeDnaToMrnaCore({
+      dnaSeed: "meet me by the tight junction",
+      senderCellType: "macrophage",
+      polymeraseLevel: 3,
+      rng: createRng(5),
+    });
+    const protein = translateMrnaToProteinCore({
+      transcript,
+      recipientCellType: "oncogenic",
+      llmProtein: "COFFEE. 17:00.",
+      rng: createRng(5),
+    });
+
+    expect(protein.protein).toBe("COFFEE. 17:00.");
+    expect(protein.isMisfolded).toBe(false);
+  });
+
   it("chaperone proteins restore a readable chain from the original DNA seed", () => {
     const refolded = refoldWithChaperone("bring the ligand", "⚠ MISFOLDED AGGREGATE");
     expect(refolded.isMisfolded).toBe(false);

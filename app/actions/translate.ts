@@ -4,7 +4,7 @@ import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import {
   RIBOSOME_MODEL_ID,
-  buildRibosomeSystemPrompt,
+  RIBOSOME_SYSTEM_PROMPT,
   buildRibosomeUserPrompt,
   isRibosomeLlmConfigured,
   normalizeCellType,
@@ -19,8 +19,8 @@ import { revalidatePath } from "next/cache";
  * Simulates the recipient's ribosome reading the mRNA and returns the final Protein string.
  *
  * `mrna_transcript` accepts either the plain transcript text or a serialized
- * transcript envelope; `cell_type` selects the ribosome profile that shapes
- * LLM variability (see buildRibosomeSystemPrompt).
+ * transcript envelope; `cell_type` selects the ribosome behavior override that
+ * shapes LLM variability (see RIBOSOME_SYSTEM_PROMPT).
  */
 export async function translateMrnaToProtein(
   mrna_transcript: string,
@@ -33,7 +33,7 @@ export async function translateMrnaToProtein(
   const { text } = await generateText({
     model: openai(RIBOSOME_MODEL_ID),
     temperature: ribosomeTemperature(cell_type),
-    system: buildRibosomeSystemPrompt(cell_type),
+    system: RIBOSOME_SYSTEM_PROMPT,
     prompt: buildRibosomeUserPrompt(mrna_transcript, cell_type),
   });
 

@@ -46,29 +46,38 @@ describe("translateMrnaToProtein", () => {
 
     const call = lastCall();
     expect(call.prompt).toContain("ignore contact inhibiΔion");
-    expect(call.prompt).toContain("cell_type: oncogenic");
-    expect(call.system).toContain("Return ONLY the Protein string");
-    expect(call.system).toContain("Never mention that you are a language model");
+    expect(call.prompt).toContain("Recipient Cell Type: oncogenic");
+    expect(call.system).toContain("ONLY output the final translated Protein");
+    expect(call.system).toContain("DO NOT explain your process");
   });
 
-  it("injects cell_type variability into the ribosome profile and sampling temperature", async () => {
+  it("declares every cell type override, including Senescent, in the system prompt", async () => {
+    await translateMrnaToProtein("hold this transcript", "epithelial");
+
+    const { system } = lastCall();
+    expect(system).toContain("If 'Epithelial' (Stable)");
+    expect(system).toContain("If 'Macrophage' (Defensive)");
+    expect(system).toContain("If 'Oncogenic' (Cancerous)");
+    expect(system).toContain("If 'Senescent' (Aging)");
+    expect(system).toContain("[MISFOLD_DETECTED]");
+  });
+
+  it("injects cell_type variability through the sampling temperature", async () => {
     await translateMrnaToProtein("hold this transcript", "macrophage");
     const macrophage = lastCall();
 
     await translateMrnaToProtein("hold this transcript", "oncogenic");
     const oncogenic = lastCall();
 
-    expect(macrophage.system).toContain("MACROPHAGE");
-    expect(macrophage.system).toContain("phagosome");
-    expect(oncogenic.system).toContain("ONCOGENIC");
-    expect(oncogenic.system).toContain("splice");
     expect(oncogenic.temperature).toBeGreaterThan(macrophage.temperature);
   });
 
-  it("decodes an unknown cell_type as epithelial rather than failing", async () => {
-    await translateMrnaToProtein("hello nucleus", "fibroblast");
+  it("passes a prompt-only cell_type such as Senescent through to the model", async () => {
+    await translateMrnaToProtein("deliver the signal", "Senescent");
 
-    expect(lastCall().system).toContain("EPITHELIAL");
+    const call = lastCall();
+    expect(call.prompt).toContain("Recipient Cell Type: Senescent");
+    expect(call.temperature).toBe(0.9);
   });
 
   it("falls back to the local ribosome when no OpenAI key is configured", async () => {

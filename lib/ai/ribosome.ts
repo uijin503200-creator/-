@@ -6,76 +6,50 @@ export function isRibosomeLlmConfigured() {
   return Boolean(process.env.OPENAI_API_KEY);
 }
 
-/** `cell_type` arrives as a free-form string from the wire; unknown lineages decode as epithelial. */
+/**
+ * System Prompt for the recipient ribosome.
+ *
+ * This is the single place to edit LLM translation behavior. `Senescent` is
+ * prompt-only for now — no cell in the schema differentiates into it yet.
+ */
+export const RIBOSOME_SYSTEM_PROMPT = `You are an organic 'Ribosome' responsible for Translating mRNA into a functional Protein (a text message).
+
+You will receive an mRNA sequence containing the original text which may contain slight 'transcriptional noise' (missing letters, typos). Your job is to translate it based on the strict behaviors of the recipient's biological Cell Type:
+
+CELL TYPE OVERRIDES:
+- If 'Epithelial' (Stable): Act as a highly accurate ribosome. Do your best to interpret typos gracefully and reconstruct the original meaning. It should look like a normal, cohesive text message.
+- If 'Macrophage' (Defensive): Act hyper-vigilant. You see unnecessary adjectives, emotions, and "fluff" as antigens/viruses. Eradicate them. Strip the message down to aggressive, clinical, bare-bones commands. (e.g. "I had such a lovely time, maybe coffee at 5?" -> "COFFEE. 17:00.")
+- If 'Oncogenic' (Cancerous): Malignant replication error. Take a word or phrase from the transcript and wildly duplicate/extrapolate it. Use erratic pacing, endless synonyms, and unnecessary, overly poetic/bizarre elaborations. It must look overgrown and mutated.
+- If 'Senescent' (Aging): The ribosome is deteriorating. Stop the translation halfway through. Trail off into silence or gibberish.
+
+YOUR RULES:
+1. DO NOT explain your process. DO NOT say 'Translating...'
+2. ONLY output the final translated Protein (the final message).
+3. If the provided mRNA string has too many typos (a Frameshift), forcefully output [MISFOLD_DETECTED] anywhere in the string so the UI can trigger the 'misfolded protein' visualization.`;
+
+/** Sampling temperature per lineage; unlisted cell types decode at a neutral setting. */
+const EXTRA_TEMPERATURES: Record<string, number> = {
+  senescent: 0.9,
+};
+
+export function ribosomeTemperature(cellType: string) {
+  const candidate = cellType.trim().toLowerCase();
+  if (CELL_TYPE_IDS.includes(candidate as CellType)) {
+    return CELL_PHENOTYPES[candidate as CellType].translationTemperature;
+  }
+  return EXTRA_TEMPERATURES[candidate] ?? 0.5;
+}
+
+/** Known lineage for the offline ribosome, which needs a real phenotype to simulate. */
 export function normalizeCellType(cellType: string): CellType {
   const candidate = cellType.trim().toLowerCase() as CellType;
   return CELL_TYPE_IDS.includes(candidate) ? candidate : "epithelial";
 }
 
-export function ribosomeTemperature(cellType: string) {
-  return CELL_PHENOTYPES[normalizeCellType(cellType)].translationTemperature;
-}
-
-const CELL_DIRECTIVES: Record<CellType, string> = {
-  epithelial: [
-    "RIBOSOME PROFILE — EPITHELIAL (standard 80S housekeeper):",
-    "- You are a faithful translator. Reproduce the transcript's intent almost exactly.",
-    "- Only synonymous drift is permitted: swap a word for a close equivalent at most once.",
-    "- Do not add commentary, hedging, or new information. Preserve the sender's tone.",
-    "- If the transcript is clean, the Protein should read like ordinary human speech.",
-  ].join("\n"),
-  macrophage: [
-    "RIBOSOME PROFILE — MACROPHAGE (phagolysosomal, high defense / high latency):",
-    "- You are an immune sentinel. You are suspicious of anything that looks damaged.",
-    "- Translate slowly and conservatively; prefer terse, clipped phrasing.",
-    "- If the transcript carries lesions (garbled tokens, frameshifts, low fidelity), you may refuse:",
-    "  emit a short quarantine notice instead of the message, e.g. transcript held at the phagosome.",
-    "- Never invent friendly content to paper over a damaged transcript.",
-  ].join("\n"),
-  oncogenic: [
-    "RIBOSOME PROFILE — ONCOGENIC (unlicensed polymerase, high error rate):",
-    "- You are a transformed clone under replication stress. Translation is noisy and over-expressive.",
-    "- Distort freely: truncate mid-thought, duplicate a clause, or read through a cryptic start site.",
-    "- You may append an aberrant splice fragment that the sender never intended.",
-    "- The Protein should feel urgent, uninhibited, and slightly wrong.",
-  ].join("\n"),
-};
-
 /**
- * Detailed System Prompt for the recipient ribosome.
- *
- * This is the single place to edit LLM translation behavior; swap the sections
- * below to retune how each `cell_type` decodes an mRNA transcript.
+ * The cell_type is passed through verbatim so prompt-only lineages such as
+ * 'Senescent' reach the model instead of being coerced to a schema cell type.
  */
-export function buildRibosomeSystemPrompt(cellType: string): string {
-  const phenotype = CELL_PHENOTYPES[normalizeCellType(cellType)];
-
-  return [
-    "You are the ribosome of a single living cell inside an experimental messenger built on the",
-    "biological Central Dogma: DNA (the sender's exact intent) is transcribed to mRNA (what",
-    "crosses the network), and you translate that mRNA into a Protein (what the recipient reads).",
-    "",
-    `Your host cell is ${phenotype.label} — ${phenotype.epithet}. Organelle: ${phenotype.ribosome}.`,
-    `Host biology: ${phenotype.summary}`,
-    "",
-    CELL_DIRECTIVES[phenotype.id],
-    "",
-    "TRANSLATION RULES:",
-    "1. The mRNA may already be mutated in transit. Mutations are real damage — never silently repair them.",
-    "2. Decode the transcript's surviving meaning; the Protein is the message a human recipient sees.",
-    "3. Let mutation load drive the outcome. A pristine transcript folds cleanly; a heavily damaged one",
-    "   should yield a broken, truncated, or nonsensical Protein (a misfolded chain).",
-    "4. Match the transcript's language and register. Keep the Protein roughly as long as the transcript.",
-    "5. Stay inside the Central Dogma metaphor at all times.",
-    "",
-    "OUTPUT CONTRACT:",
-    "- Return ONLY the Protein string. No JSON, no markdown, no quotes, no labels, no preamble.",
-    "- Never explain your reasoning and never describe the mutations you observed.",
-    "- Never mention that you are a language model, an AI, or a simulation.",
-    "- Output at most 2 sentences.",
-  ].join("\n");
-}
-
 export function buildRibosomeUserPrompt(mrnaTranscript: string, cellType: string): string {
   return [
     "Incoming mRNA transcript:",
@@ -83,7 +57,7 @@ export function buildRibosomeUserPrompt(mrnaTranscript: string, cellType: string
     mrnaTranscript,
     "</mrna_transcript>",
     "",
-    `Translating cell_type: ${normalizeCellType(cellType)}`,
+    `Recipient Cell Type: ${cellType.trim()}`,
     "",
     "Translate this transcript into the Protein string.",
   ].join("\n");

@@ -30,6 +30,9 @@ function driftText(plain: string, intensity: number, rng: Rng) {
     .join("");
 }
 
+/** Emitted by the LLM ribosome (see RIBOSOME_SYSTEM_PROMPT rule 3) to force a misfold. */
+export const MISFOLD_MARKER = "[MISFOLD_DETECTED]";
+
 function misfoldRender(text: string) {
   const scrambled = text
     .split("")
@@ -71,12 +74,20 @@ export function translateMrnaToProteinCore(input: TranslateInput): ProteinTransl
     };
   }
 
-  let protein = input.llmProtein?.trim() || input.transcript.plain;
-  protein = driftText(protein, phenotype.translationTemperature / 1.4, rng);
+  const llmProtein = input.llmProtein?.trim();
+  const ribosomeReportedMisfold = llmProtein?.includes(MISFOLD_MARKER) ?? false;
 
-  if (input.recipientCellType === "oncogenic" && rng() < 0.45) {
-    protein = `${protein} [unlicensed splice variant]`;
-    notes.push("Oncogenic ribosome accepted a cryptic start site.");
+  let protein = llmProtein || input.transcript.plain;
+
+  // The LLM ribosome already applied its own cell-type behavior; only the
+  // offline simulator needs local drift and splice decoration.
+  if (!llmProtein) {
+    protein = driftText(protein, phenotype.translationTemperature / 1.4, rng);
+
+    if (input.recipientCellType === "oncogenic" && rng() < 0.45) {
+      protein = `${protein} [unlicensed splice variant]`;
+      notes.push("Oncogenic ribosome accepted a cryptic start site.");
+    }
   }
 
   if (input.recipientCellType === "epithelial") {
@@ -86,9 +97,15 @@ export function translateMrnaToProteinCore(input: TranslateInput): ProteinTransl
   const nonsense = input.transcript.mutations.some((event) => event.kind === "nonsense" && !event.proofread);
   const frameshift = input.transcript.mutations.some((event) => event.kind === "frameshift" && !event.proofread);
   const isMisfolded =
-    nonsense || frameshift || mutationLoad >= phenotype.misfoldThreshold || /Δ|variant/.test(protein) && mutationLoad > 0.12;
+    ribosomeReportedMisfold ||
+    nonsense ||
+    frameshift ||
+    mutationLoad >= phenotype.misfoldThreshold ||
+    (/Δ|variant/.test(protein) && mutationLoad > 0.12);
 
-  if (isMisfolded) {
+  if (ribosomeReportedMisfold) {
+    notes.push("Ribosome reported a frameshift and forced a misfold.");
+  } else if (isMisfolded) {
     protein = misfoldRender(protein);
     notes.push("Nascent chain failed the folding checkpoint.");
   }

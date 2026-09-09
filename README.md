@@ -68,21 +68,26 @@ import { translateMrnaToProtein } from "@/app/actions/translate";
 const protein = await translateMrnaToProtein(mrnaTranscript, "oncogenic");
 ```
 
-`mrna_transcript` accepts the plain transcript text or a serialized transcript envelope. `cell_type` selects the ribosome profile that drives LLM variability — the system prompt and sampling temperature change per cell:
+`mrna_transcript` accepts the plain transcript text or a serialized transcript envelope. `cell_type` selects the ribosome behavior override in the system prompt and sets the sampling temperature:
 
 | `cell_type` | Temperature | Ribosome behavior |
 | --- | --- | --- |
-| `epithelial` | 0.35 | Faithful; only synonymous drift |
-| `macrophage` | 0.18 | Terse, suspicious; may quarantine a damaged transcript |
-| `oncogenic` | 1.15 | Noisy, truncated, cryptic splice variants |
+| `epithelial` | 0.35 | Stable. Interprets typos gracefully, reads like a normal message |
+| `macrophage` | 0.18 | Defensive. Treats fluff as antigens; strips to clinical commands |
+| `oncogenic` | 1.15 | Cancerous. Duplicates and extrapolates until overgrown |
+| `senescent` | 0.9 | Aging. Stops halfway and trails off into gibberish |
 
-Unknown cell types decode as `epithelial`. Enable it with:
+`cell_type` is passed to the model verbatim, so `senescent` works even though no cell in the schema differentiates into it yet. Enable the LLM with:
 
 ```
 OPENAI_API_KEY=sk-...
 ```
 
-Without a key the action falls back to the deterministic local ribosome so the lab still runs offline. Edit the prompt in one place: `buildRibosomeSystemPrompt` in `lib/ai/ribosome.ts`.
+Without a key the action falls back to the deterministic local ribosome so the lab still runs offline. Edit the prompt in one place: `RIBOSOME_SYSTEM_PROMPT` in `lib/ai/ribosome.ts`.
+
+### Misfold contract
+
+Rule 3 of the system prompt tells the ribosome to emit `[MISFOLD_DETECTED]` when the transcript has too many typos to read (a frameshift). `translateMrnaToProteinCore` treats that marker as authoritative: it sets `is_misfolded`, preserves the ribosome's own string instead of re-wrapping it, and the UI renders the red misfolded-protein membrane with a chaperone repair option.
 
 `translateVesicle(vesicleId)` wraps the action for the stored-message pipeline, persisting `protein_result`, `is_misfolded`, and latency.
 
