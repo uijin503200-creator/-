@@ -56,7 +56,7 @@ export function PulseField({ intensity = 1, discovered = false }: Props) {
   }));
 
   return (
-    <View style={styles.wrap} pointerEvents="none">
+    <View style={[styles.wrap, styles.noPointer]}>
       <Ring delay={0} scaleTo={2.4} discovered={discovered} />
       <Ring delay={700} scaleTo={2.1} discovered={discovered} />
       <Ring delay={1400} scaleTo={1.8} discovered={discovered} />
@@ -71,6 +71,9 @@ const styles = StyleSheet.create({
     height: 260,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  noPointer: {
+    pointerEvents: 'none',
   },
   ring: {
     position: 'absolute',

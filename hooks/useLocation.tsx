@@ -11,6 +11,7 @@ import React, {
 import { Platform } from 'react-native';
 
 import { DEMO_ORIGIN, LOCATION_POLL_MS } from '@/lib/constants';
+import { clearDemoStorage } from '@/lib/demo-store';
 import { offsetCoords } from '@/lib/haversine';
 import type { Coords } from '@/lib/types';
 
@@ -22,6 +23,7 @@ type LocationState = {
   walkToward: (target: Coords, meters?: number) => void;
   teleportTo: (coords: Coords) => void;
   resetToOrigin: () => void;
+  hardResetDemo: () => Promise<void>;
 };
 
 const LocationContext = createContext<LocationState | null>(null);
@@ -118,6 +120,13 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     setUsingDemoLocation(true);
   }, []);
 
+  const hardResetDemo = useCallback(async () => {
+    await clearDemoStorage();
+    overrideRef.current = DEMO_ORIGIN;
+    setCoords({ ...DEMO_ORIGIN });
+    setUsingDemoLocation(true);
+  }, []);
+
   const value = useMemo(
     () => ({
       coords,
@@ -127,8 +136,9 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       walkToward,
       teleportTo,
       resetToOrigin,
+      hardResetDemo,
     }),
-    [coords, permission, usingDemoLocation, error, walkToward, teleportTo, resetToOrigin]
+    [coords, permission, usingDemoLocation, error, walkToward, teleportTo, resetToOrigin, hardResetDemo]
   );
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;

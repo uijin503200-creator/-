@@ -4,8 +4,6 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 
 import { palette, typography } from '@/lib/theme';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 type Props = {
   label: string;
   onPress?: () => void;
@@ -22,7 +20,8 @@ export function GhostButton({ label, onPress, disabled, variant = 'primary', sty
   }));
 
   return (
-    <AnimatedPressable
+    <Pressable
+      accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
       onPressIn={() => {
@@ -31,24 +30,26 @@ export function GhostButton({ label, onPress, disabled, variant = 'primary', sty
       onPressOut={() => {
         pressed.value = 0;
       }}
-      style={[
-        styles.base,
-        variant === 'primary' && styles.primary,
-        variant === 'ghost' && styles.ghost,
-        variant === 'echo' && styles.echo,
-        style,
-        anim,
-      ]}>
-      <Text
+      style={style}>
+      <Animated.View
         style={[
-          styles.label,
-          variant === 'primary' && styles.labelPrimary,
-          variant === 'ghost' && styles.labelGhost,
-          variant === 'echo' && styles.labelEcho,
+          styles.base,
+          variant === 'primary' && styles.primary,
+          variant === 'ghost' && styles.ghost,
+          variant === 'echo' && styles.echo,
+          anim,
         ]}>
-        {label}
-      </Text>
-    </AnimatedPressable>
+        <Text
+          style={[
+            styles.label,
+            variant === 'primary' && styles.labelPrimary,
+            variant === 'ghost' && styles.labelGhost,
+            variant === 'echo' && styles.labelEcho,
+          ]}>
+          {label}
+        </Text>
+      </Animated.View>
+    </Pressable>
   );
 }
 

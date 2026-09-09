@@ -13,8 +13,8 @@ export function Atmosphere({ children }: { children: React.ReactNode }) {
         locations={[0, 0.35, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.haze} pointerEvents="none" />
-      <View style={styles.vignette} pointerEvents="none" />
+      <View style={[styles.haze, styles.noPointer]} />
+      <View style={[styles.vignette, styles.noPointer]} />
       {children}
     </View>
   );
@@ -24,6 +24,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: palette.void,
+  },
+  noPointer: {
+    pointerEvents: 'none',
   },
   haze: {
     ...StyleSheet.absoluteFill,

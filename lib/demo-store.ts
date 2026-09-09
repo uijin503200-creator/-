@@ -57,7 +57,14 @@ export async function ensureDemoUser(): Promise<string> {
   const notes = await readJson<Note[]>(NOTES_KEY, []);
   if (notes.length === 0) {
     const seeded: Note[] = SEED_MESSAGES.map((content, i) => {
-      const offset = offsetCoords(DEMO_ORIGIN, (i - 2) * 8, (i % 2 === 0 ? 1 : -1) * 6);
+      // Place seeds ~25–55m out so the plaza starts quiet; walk-toward brings them in.
+      const bearing = (i / SEED_MESSAGES.length) * Math.PI * 2;
+      const distance = 25 + i * 7;
+      const offset = offsetCoords(
+        DEMO_ORIGIN,
+        Math.cos(bearing) * distance,
+        Math.sin(bearing) * distance
+      );
       return {
         id: uid(),
         user_id: 'seed_wanderer',
@@ -192,4 +199,9 @@ export async function hasDemoEchoed(noteId: string, userId: string): Promise<boo
 export async function resetDemoWorld(): Promise<void> {
   await AsyncStorage.multiRemove([NOTES_KEY, PROFILE_KEY, READS_KEY, ECHOES_KEY, USER_KEY]);
   await ensureDemoUser();
+}
+
+/** Dev helper: wipe local demo storage (used by web “reset plaza”). */
+export async function clearDemoStorage(): Promise<void> {
+  await AsyncStorage.multiRemove([NOTES_KEY, PROFILE_KEY, READS_KEY, ECHOES_KEY, USER_KEY]);
 }

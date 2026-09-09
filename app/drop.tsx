@@ -70,7 +70,7 @@ export default function DropScreen() {
             placeholderTextColor={palette.mist}
             multiline
             autoFocus
-            style={styles.input}
+            style={[styles.input, styles.inputWeb]}
             textAlignVertical="top"
           />
           <View style={styles.metaRow}>
@@ -129,7 +129,12 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     color: palette.paper,
     padding: 0,
+    borderWidth: 0,
   },
+  inputWeb: Platform.select({
+    web: { outlineWidth: 0 } as object,
+    default: {},
+  }),
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

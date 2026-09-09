@@ -20,7 +20,7 @@ import { palette, typography } from '@/lib/theme';
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { profile, loading: authLoading, demoMode } = useAuth();
-  const { coords, usingDemoLocation, error: locError, walkToward, resetToOrigin } = useLocation();
+  const { coords, usingDemoLocation, error: locError, walkToward, hardResetDemo } = useLocation();
   const { notes, loading: notesLoading } = useNotes();
   useHeartbeat(notes);
 
@@ -103,7 +103,13 @@ export default function HomeScreen() {
             />
           ) : null}
           {usingDemoLocation ? (
-            <Pressable onPress={resetToOrigin} hitSlop={12}>
+            <Pressable
+              onPress={async () => {
+                await hardResetDemo();
+                // Full reload so demo seeds rehydrate cleanly in web preview.
+                if (typeof window !== 'undefined') window.location.reload();
+              }}
+              hitSlop={12}>
               <Text style={styles.demoHint}>
                 {locError ?? 'Demo location'} · reset plaza
               </Text>
