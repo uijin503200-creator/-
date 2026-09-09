@@ -4,6 +4,11 @@ import {
   CormorantGaramond_500Medium,
 } from '@expo-google-fonts/cormorant-garamond';
 import { Outfit_300Light, Outfit_400Regular, Outfit_500Medium } from '@expo-google-fonts/outfit';
+import {
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_500Medium,
+  PlayfairDisplay_700Bold,
+} from '@expo-google-fonts/playfair-display';
 import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -40,6 +45,9 @@ export default function RootLayout() {
     Outfit_300Light,
     Outfit_400Regular,
     Outfit_500Medium,
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_500Medium,
+    PlayfairDisplay_700Bold,
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
@@ -65,6 +73,7 @@ export default function RootLayout() {
               animation: 'fade',
             }}>
             <Stack.Screen name="index" />
+            <Stack.Screen name="map" options={{ animation: 'fade' }} />
             <Stack.Screen name="drop" options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="note/[id]" options={{ animation: 'fade' }} />
           </Stack>
