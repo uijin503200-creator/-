@@ -65,19 +65,15 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
       }
     };
 
-    const useFallbackLocation = () => {
-      const lat = Number(import.meta.env.VITE_DEV_DEFAULT_LAT);
-      const lng = Number(import.meta.env.VITE_DEV_DEFAULT_LNG);
-      if (Number.isFinite(lat) && Number.isFinite(lng)) {
-        setLocation({ lat, lng });
-        setError('');
-        scanForNotes(lat, lng);
-        return true;
-      }
-      return false;
-    };
+    const demoLat = Number(import.meta.env.VITE_DEV_DEFAULT_LAT);
+    const demoLng = Number(import.meta.env.VITE_DEV_DEFAULT_LNG);
+    const useDemoLocation = Number.isFinite(demoLat) && Number.isFinite(demoLng);
 
-    if ("geolocation" in navigator) {
+    if (useDemoLocation) {
+      setLocation({ lat: demoLat, lng: demoLng });
+      setError('');
+      scanForNotes(demoLat, demoLng);
+    } else if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
@@ -86,13 +82,11 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
           scanForNotes(latitude, longitude);
         },
         () => {
-          if (!useFallbackLocation()) {
-            setError('Location access required for Drift to function.');
-          }
+          setError('Location access required for Drift to function.');
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
       );
-    } else if (!useFallbackLocation()) {
+    } else {
       setError('Geolocation is not supported by your browser.');
     }
 

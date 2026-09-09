@@ -17,24 +17,19 @@ export default function ComposerScreen({ user, token, onClose, onDropped }: Comp
   const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
 
   useEffect(() => {
-    const fallbackLat = Number(import.meta.env.VITE_DEV_DEFAULT_LAT);
-    const fallbackLng = Number(import.meta.env.VITE_DEV_DEFAULT_LNG);
-    const useFallback = () => {
-      if (Number.isFinite(fallbackLat) && Number.isFinite(fallbackLng)) {
-        setLocation({ lat: fallbackLat, lng: fallbackLng });
-        return true;
-      }
-      return false;
-    };
+    const demoLat = Number(import.meta.env.VITE_DEV_DEFAULT_LAT);
+    const demoLng = Number(import.meta.env.VITE_DEV_DEFAULT_LNG);
+    if (Number.isFinite(demoLat) && Number.isFinite(demoLng)) {
+      setLocation({ lat: demoLat, lng: demoLng });
+      return;
+    }
 
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {
-          if (!useFallback()) setError("Location required to drop a note.");
-        }
+        () => setError("Location required to drop a note.")
       );
-    } else if (!useFallback()) {
+    } else {
       setError("Location required to drop a note.");
     }
   }, []);
