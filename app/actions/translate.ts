@@ -19,8 +19,8 @@ import { revalidatePath } from "next/cache";
  * Simulates the recipient's ribosome reading the mRNA and returns the final Protein string.
  *
  * `mrna_transcript` accepts either the plain transcript text or a serialized
- * transcript envelope; `cell_type` selects the ribosome profile that shapes
- * LLM variability (see buildRibosomeSystemPrompt).
+ * transcript envelope; `cell_type` selects the ribosome override inside the
+ * engineering system prompt (see RIBOSOME_SYSTEM_PROMPT).
  */
 export async function translateMrnaToProtein(
   mrna_transcript: string,

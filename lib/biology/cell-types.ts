@@ -61,6 +61,20 @@ export const CELL_PHENOTYPES: Record<CellType, CellPhenotype> = {
     defense: 0.03,
     accent: "#fb7185",
   },
+  senescent: {
+    id: "senescent",
+    label: "Senescent",
+    epithet: "Aging / deteriorating ribosome",
+    ribosome: "Hayflick-limited ribosome",
+    summary:
+      "Quiescent, damaged lineage. Translation stalls mid-chain and trails into silence.",
+    baseMutationRate: 0.14,
+    translationTemperature: 0.55,
+    latencyMs: [280, 720],
+    misfoldThreshold: 0.2,
+    defense: 0.08,
+    accent: "#a8a29e",
+  },
 };
 
 export function polymeraseMutationMultiplier(level: number) {

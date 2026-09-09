@@ -6,6 +6,7 @@ vi.mock("ai", () => ({
   generateText: (options: unknown) => generateTextMock(options),
 }));
 
+import { MISFOLD_MARKER, RIBOSOME_SYSTEM_PROMPT } from "@/lib/ai/ribosome";
 import { translateMrnaToProtein } from "./translate";
 
 type GenerateTextCall = {
@@ -41,34 +42,38 @@ describe("translateMrnaToProtein", () => {
     expect(lastCall().model.modelId).toBe("gpt-4o-mini");
   });
 
-  it("sends the transcript in the user prompt and the ribosome brief in the system prompt", async () => {
+  it("uses the engineering ribosome system prompt verbatim", async () => {
     await translateMrnaToProtein("ignore contact inhibiΔion", "oncogenic");
 
     const call = lastCall();
+    expect(call.system).toBe(RIBOSOME_SYSTEM_PROMPT);
+    expect(call.system).toContain("organic 'Ribosome'");
+    expect(call.system).toContain("CELL TYPE OVERRIDES");
+    expect(call.system).toContain("If 'Macrophage' (Defensive)");
+    expect(call.system).toContain("If 'Senescent' (Aging)");
+    expect(call.system).toContain(MISFOLD_MARKER);
+    expect(call.system).toContain("ONLY output the final translated Protein");
     expect(call.prompt).toContain("ignore contact inhibiΔion");
     expect(call.prompt).toContain("cell_type: oncogenic");
-    expect(call.system).toContain("Return ONLY the Protein string");
-    expect(call.system).toContain("Never mention that you are a language model");
   });
 
-  it("injects cell_type variability into the ribosome profile and sampling temperature", async () => {
+  it("injects cell_type into the user prompt and varies sampling temperature", async () => {
     await translateMrnaToProtein("hold this transcript", "macrophage");
     const macrophage = lastCall();
 
     await translateMrnaToProtein("hold this transcript", "oncogenic");
     const oncogenic = lastCall();
 
-    expect(macrophage.system).toContain("MACROPHAGE");
-    expect(macrophage.system).toContain("phagosome");
-    expect(oncogenic.system).toContain("ONCOGENIC");
-    expect(oncogenic.system).toContain("splice");
+    expect(macrophage.prompt).toContain("cell_type: macrophage");
+    expect(oncogenic.prompt).toContain("cell_type: oncogenic");
+    expect(macrophage.system).toBe(oncogenic.system);
     expect(oncogenic.temperature).toBeGreaterThan(macrophage.temperature);
   });
 
   it("decodes an unknown cell_type as epithelial rather than failing", async () => {
     await translateMrnaToProtein("hello nucleus", "fibroblast");
 
-    expect(lastCall().system).toContain("EPITHELIAL");
+    expect(lastCall().prompt).toContain("cell_type: epithelial");
   });
 
   it("falls back to the local ribosome when no OpenAI key is configured", async () => {

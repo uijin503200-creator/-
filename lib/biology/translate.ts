@@ -72,9 +72,13 @@ export function translateMrnaToProteinCore(input: TranslateInput): ProteinTransl
   }
 
   let protein = input.llmProtein?.trim() || input.transcript.plain;
-  protein = driftText(protein, phenotype.translationTemperature / 1.4, rng);
+  const llmMarkedMisfold = /\[MISFOLD_DETECTED\]/i.test(protein);
 
-  if (input.recipientCellType === "oncogenic" && rng() < 0.45) {
+  if (!input.llmProtein) {
+    protein = driftText(protein, phenotype.translationTemperature / 1.4, rng);
+  }
+
+  if (!input.llmProtein && input.recipientCellType === "oncogenic" && rng() < 0.45) {
     protein = `${protein} [unlicensed splice variant]`;
     notes.push("Oncogenic ribosome accepted a cryptic start site.");
   }
@@ -83,14 +87,26 @@ export function translateMrnaToProteinCore(input: TranslateInput): ProteinTransl
     notes.push("Housekeeping ribosome applied synonymous decoding.");
   }
 
+  if (input.recipientCellType === "senescent" && !input.llmProtein) {
+    const midpoint = Math.max(4, Math.floor(protein.length * 0.45));
+    protein = `${protein.slice(0, midpoint)}… ░▒▓`;
+    notes.push("Senescent ribosome stalled mid-elongation.");
+  }
+
   const nonsense = input.transcript.mutations.some((event) => event.kind === "nonsense" && !event.proofread);
   const frameshift = input.transcript.mutations.some((event) => event.kind === "frameshift" && !event.proofread);
   const isMisfolded =
-    nonsense || frameshift || mutationLoad >= phenotype.misfoldThreshold || /Δ|variant/.test(protein) && mutationLoad > 0.12;
+    llmMarkedMisfold ||
+    nonsense ||
+    frameshift ||
+    mutationLoad >= phenotype.misfoldThreshold ||
+    (/Δ|variant/.test(protein) && mutationLoad > 0.12);
 
-  if (isMisfolded) {
+  if (isMisfolded && !llmMarkedMisfold) {
     protein = misfoldRender(protein);
     notes.push("Nascent chain failed the folding checkpoint.");
+  } else if (llmMarkedMisfold) {
+    notes.push("Ribosome emitted [MISFOLD_DETECTED] after frameshift damage.");
   }
 
   return {

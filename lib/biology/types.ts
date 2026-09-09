@@ -1,4 +1,4 @@
-export const CELL_TYPE_IDS = ["epithelial", "macrophage", "oncogenic"] as const;
+export const CELL_TYPE_IDS = ["epithelial", "macrophage", "oncogenic", "senescent"] as const;
 export type CellType = (typeof CELL_TYPE_IDS)[number];
 
 export const MUTATION_KINDS = [

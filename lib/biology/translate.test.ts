@@ -50,4 +50,22 @@ describe("translateMrnaToProteinCore", () => {
     expect(refolded.protein).toContain("bring the ligand");
     expect(refolded.ribosome).toMatch(/Hsp/);
   });
+
+  it("honors an LLM [MISFOLD_DETECTED] marker without rewriting the Protein", () => {
+    const transcript = transcribeDnaToMrnaCore({
+      dnaSeed: "coffee at five",
+      senderCellType: "epithelial",
+      polymeraseLevel: 0,
+      rng: createRng(1),
+    });
+    const protein = translateMrnaToProteinCore({
+      transcript,
+      recipientCellType: "epithelial",
+      llmProtein: "cof fee at fiv [MISFOLD_DETECTED]",
+      rng: createRng(1),
+    });
+    expect(protein.isMisfolded).toBe(true);
+    expect(protein.protein).toBe("cof fee at fiv [MISFOLD_DETECTED]");
+    expect(protein.notes.some((note) => note.includes("MISFOLD_DETECTED"))).toBe(true);
+  });
 });

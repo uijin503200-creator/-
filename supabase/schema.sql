@@ -9,7 +9,13 @@ create extension if not exists pgcrypto;
 -- ---------------------------------------------------------------------------
 
 do $$ begin
-  create type public.cell_type as enum ('epithelial', 'macrophage', 'oncogenic');
+  create type public.cell_type as enum ('epithelial', 'macrophage', 'oncogenic', 'senescent');
+exception when duplicate_object then null;
+end $$;
+
+-- Idempotent upgrade if the enum already existed without senescent.
+do $$ begin
+  alter type public.cell_type add value if not exists 'senescent';
 exception when duplicate_object then null;
 end $$;
 

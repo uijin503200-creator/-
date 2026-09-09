@@ -24,7 +24,7 @@ DNA seed  ──transcribeDnaToMrna──►  mRNA transcript (JSON on the wire)
 | --- | --- | --- |
 | Schema | `supabase/schema.sql` | Profiles (cell types), vesicles, IAP catalog, RLS, purchase/chaperone RPCs |
 | Biology | `lib/biology/` | Mutation chance, codon encoding, folding, chaperone refold |
-| Ribosome prompt | `lib/ai/ribosome.ts` | Detailed per-`cell_type` system prompt, model id, temperature |
+| Ribosome prompt | `lib/ai/ribosome.ts` | Engineering ribosome system prompt, model id, temperature |
 | Actions | `app/actions/` | `transcribeDnaToMrna`, `translateMrnaToProtein`, `translateVesicle`, IAP |
 | UI | `app/(lab)/`, `components/lab/` | Microscope feed, cytoplasm inbox, IAP store |
 
@@ -33,6 +33,7 @@ DNA seed  ──transcribeDnaToMrna──►  mRNA transcript (JSON on the wire)
 - **Epithelial** — standard ribosome, modest mutation
 - **Macrophage** — high defense / high latency; may phagocytose damaged mRNA
 - **Oncogenic** — high error / mutation rate, noisy folding
+- **Senescent** — aging ribosome; translation stalls mid-chain
 
 ## Run locally
 
@@ -68,21 +69,22 @@ import { translateMrnaToProtein } from "@/app/actions/translate";
 const protein = await translateMrnaToProtein(mrnaTranscript, "oncogenic");
 ```
 
-`mrna_transcript` accepts the plain transcript text or a serialized transcript envelope. `cell_type` selects the ribosome profile that drives LLM variability — the system prompt and sampling temperature change per cell:
+`mrna_transcript` accepts the plain transcript text or a serialized transcript envelope. `cell_type` is passed in the user prompt so the shared engineering system prompt can apply the matching CELL TYPE OVERRIDE; sampling temperature still varies per cell:
 
 | `cell_type` | Temperature | Ribosome behavior |
 | --- | --- | --- |
-| `epithelial` | 0.35 | Faithful; only synonymous drift |
-| `macrophage` | 0.18 | Terse, suspicious; may quarantine a damaged transcript |
-| `oncogenic` | 1.15 | Noisy, truncated, cryptic splice variants |
+| `epithelial` | 0.35 | Reconstruct typos into a normal cohesive message |
+| `macrophage` | 0.18 | Strip fluff into clinical bare-bones commands |
+| `oncogenic` | 1.15 | Overgrown, duplicated, mutated elaborations |
+| `senescent` | 0.55 | Stall mid-translation into silence / gibberish |
 
-Unknown cell types decode as `epithelial`. Enable it with:
+Frameshift damage should make the model emit `[MISFOLD_DETECTED]`, which sets `is_misfolded` for the UI. Unknown cell types decode as `epithelial`. Enable the LLM with:
 
 ```
 OPENAI_API_KEY=sk-...
 ```
 
-Without a key the action falls back to the deterministic local ribosome so the lab still runs offline. Edit the prompt in one place: `buildRibosomeSystemPrompt` in `lib/ai/ribosome.ts`.
+Without a key the action falls back to the deterministic local ribosome so the lab still runs offline. Edit the prompt in one place: `RIBOSOME_SYSTEM_PROMPT` in `lib/ai/ribosome.ts`.
 
 `translateVesicle(vesicleId)` wraps the action for the stored-message pipeline, persisting `protein_result`, `is_misfolded`, and latency.
 
