@@ -28,22 +28,22 @@ const NOTES = [
   { id: 's1', lat: 51.5258, lng: -0.0804, at: 37200 },
   { id: 's2', lat: 51.5264, lng: -0.0816, at: 37600 },
   { id: 's3', lat: 51.5252, lng: -0.0791, at: 38000 },
-  { id: 'n1', lat: 51.5390, lng: -0.1426, at: 38400 },
+  { id: 'n1', lat: 51.5130, lng: -0.3048, at: 38400 },
   { id: 'n2', lat: 51.5552, lng: -0.1784, at: 38800 },
-  { id: 'n3', lat: 51.5157, lng: -0.2058, at: 39200 },
-  { id: 'n4', lat: 51.4874, lng: -0.1682, at: 39600 },
-  { id: 'n5', lat: 51.4791, lng: -0.1446, at: 40000 },
+  { id: 'n3', lat: 51.4220, lng: -0.2085, at: 39200 },
+  { id: 'n4', lat: 51.4613, lng: -0.3038, at: 39600 },
+  { id: 'n5', lat: 51.5432, lng: -0.0035, at: 40000 },
   { id: 'n6', lat: 51.4826, lng: -0.0077, at: 40400 },
   { id: 'n7', lat: 51.5054, lng: -0.0235, at: 40800 },
-  { id: 'n8', lat: 51.4994, lng: -0.1276, at: 41200 },
-  { id: 'n9', lat: 51.5073, lng: -0.1657, at: 41600 },
+  { id: 'n8', lat: 51.3762, lng: -0.0982, at: 41200 },
+  { id: 'n9', lat: 51.5904, lng: -0.0195, at: 41600 },
   { id: 'n10', lat: 51.5079, lng: -0.0877, at: 42000 },
-  { id: 'n11', lat: 51.4613, lng: -0.1156, at: 42400 },
+  { id: 'n11', lat: 51.4451, lng: -0.0204, at: 42400 },
   { id: 'n12', lat: 51.5308, lng: -0.1238, at: 42800 },
-  { id: 'n13', lat: 51.5136, lng: -0.1365, at: 43200 },
-  { id: 'n14', lat: 51.4941, lng: -0.1742, at: 43600 },
+  { id: 'n13', lat: 51.4874, lng: -0.1682, at: 43200 },
+  { id: 'n14', lat: 51.6530, lng: -0.2004, at: 43600 },
   { id: 'n15', lat: 51.4740, lng: -0.0694, at: 44000 },
-  { id: 'n16', lat: 51.5081, lng: -0.0759, at: 44400 },
+  { id: 'n16', lat: 51.4994, lng: -0.1276, at: 44400 },
 ];
 
 function clamp(v: number, a = 0, b = 1) {
@@ -120,9 +120,9 @@ export default function DriftFilm() {
   const mapOpacity = span(t, 29200, 30800) * (1 - span(t, 58800, 60400));
   const mapZoom =
     t < 32800 ? 16.7 :
-    t < 40200 ? lerp(16.7, 11.15, easeInOut(span(t, 32800, 40200))) :
-    t < 45800 ? 11.15 :
-    lerp(11.15, 16.4, easeInOut(span(t, 45800, 50800)));
+    t < 40200 ? lerp(16.7, 10.55, easeInOut(span(t, 32800, 40200))) :
+    t < 45800 ? 10.55 :
+    lerp(10.55, 16.4, easeInOut(span(t, 45800, 50800)));
   const pinOpacity = 1 - span(t, 50800, 52800);
   const mapWash = showRadar ? lerp(1, 0.55, span(t, 50500, 52800)) : 1;
 
@@ -290,10 +290,7 @@ export default function DriftFilm() {
             <p className="film-paper">“{noteText}”</p>
             {t > 71800 && (
               <div className="film-echo-row">
-                <div className="film-echo">
-                  <span>0</span>
-                  <em>Echo</em>
-                </div>
+                <em>Echo</em>
               </div>
             )}
           </div>

@@ -326,29 +326,16 @@
   border-top: 1px solid #18181b;
 }
 
-.film-echo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.film-echo span {
-  font-size: 10px;
-  line-height: 1;
-  color: #3f3f46;
-  letter-spacing: 0.2em;
-}
-
-.film-echo em {
+.film-echo-row em {
   font-style: normal;
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 12px;
   font-weight: 300;
   line-height: 1;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   color: #52525b;
+  text-align: center;
 }
 
 .film-walk {
