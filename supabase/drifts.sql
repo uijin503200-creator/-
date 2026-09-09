@@ -133,3 +133,20 @@ as $$
       radius_m
     );
 $$;
+
+-- Standalone purge for drifts (schema.sql purge_expired_notes also clears both)
+create or replace function public.purge_expired_drifts()
+returns integer
+language plpgsql
+security definer
+as $$
+declare
+  deleted_count integer;
+begin
+  delete from public.drifts
+  where first_read_at is not null
+    and first_read_at + interval '24 hours' + (echo_count * interval '7 days') <= now();
+  get diagnostics deleted_count = row_count;
+  return deleted_count;
+end;
+$$;

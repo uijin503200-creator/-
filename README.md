@@ -65,6 +65,5 @@ cp -a .agents/skills/browser-harness .cursor/skills/
 
 ## Screens
 
-- `/` — cinematic pulse field, nearby discovery, pages meter
-- `/drop` — leave a note at current coordinates
-- `/note/[id]` — read + echo (only inside the radius)
+- `/` — dark map home, permission gate, Drop modal, nearby discovery
+- `/note/[id]` — read + echo (only inside the 15m radius)

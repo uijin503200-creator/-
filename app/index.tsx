@@ -131,7 +131,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <DriftMap coords={coords} />
+      <DriftMap
+        coords={coords}
+        notes={notes}
+        onNotePress={(id) => router.push(`/note/${id}`)}
+      />
 
       <View
         style={[styles.overlay, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 28 }]}

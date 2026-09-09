@@ -137,6 +137,13 @@ begin
   where id = p_note_id
   returning * into n;
 
+  -- Keep drifts table in lockstep when dual-written.
+  update public.drifts
+  set
+    first_read_at = coalesce(first_read_at, now()),
+    is_dormant = false
+  where id = p_note_id;
+
   insert into public.note_reads (note_id, user_id)
   values (p_note_id, auth.uid())
   on conflict (note_id, user_id) do nothing;
@@ -164,6 +171,10 @@ begin
     where id = p_note_id
     returning * into n;
 
+    update public.drifts
+    set echo_count = echo_count + 1
+    where id = p_note_id;
+
     update public.note_reads
     set echoed = true
     where note_id = p_note_id and user_id = auth.uid();
@@ -175,20 +186,28 @@ begin
 end;
 $$;
 
--- Purge notes past decay (call via cron / Edge Function)
+-- Purge notes + drifts past decay (call via cron / Edge Function)
 create or replace function public.purge_expired_notes()
 returns integer
 language plpgsql
 security definer
 as $$
 declare
-  deleted_count integer;
+  deleted_notes integer;
+  deleted_drifts integer;
 begin
   delete from public.notes
   where first_read_at is not null
     and first_read_at + interval '24 hours' + (echo_count * interval '7 days') <= now();
-  get diagnostics deleted_count = row_count;
-  return deleted_count;
+  get diagnostics deleted_notes = row_count;
+
+  delete from public.drifts
+  where first_read_at is not null
+    and first_read_at + interval '24 hours' + (echo_count * interval '7 days') <= now();
+  get diagnostics deleted_drifts = row_count;
+
+  return deleted_notes + deleted_drifts;
 end;
 $$;
+
 -- Also see supabase/drifts.sql for the drifts table + drop_drift RPC.

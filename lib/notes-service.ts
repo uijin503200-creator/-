@@ -59,6 +59,9 @@ export async function fetchNearbyNotes(coords: Coords): Promise<NearbyNote[]> {
   }
 
   const supabase = getSupabase()!;
+  // Best-effort purge of decayed notes/drifts on each sense cycle.
+  void supabase.rpc('purge_expired_notes');
+
   const { data, error } = await supabase.rpc('nearby_notes', {
     lat: coords.latitude,
     lon: coords.longitude,
