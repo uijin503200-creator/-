@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <h1>Task Board</h1>
+        <p class="app__subtitle">A minimal full-stack starter · Express + vanilla JS</p>
+      </header>
+
+      <form id="new-task-form" class="task-form" autocomplete="off">
+        <input
+          id="new-task-input"
+          class="task-form__input"
+          type="text"
+          name="title"
+          placeholder="Add a new task…"
+          aria-label="New task title"
+          required
+        />
+        <button class="task-form__button" type="submit">Add</button>
+      </form>
+
+      <section aria-live="polite">
+        <ul id="task-list" class="task-list"></ul>
+        <p id="empty-state" class="empty-state" hidden>No tasks yet. Add your first one above.</p>
+      </section>
+
+      <footer class="app__footer">
+        <span id="status" class="status"></span>
+      </footer>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
