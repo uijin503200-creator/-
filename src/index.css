@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-serif: "Playfair Display", serif;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+@keyframes ping-radar {
+  0% { transform: scale(0.8); opacity: 0; }
+  33% { opacity: 0.25; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes ping-sonar {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(8); opacity: 0; }
+}
+
+@keyframes ping-auth {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+@keyframes pulse-logo {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-ping-radar {
+  animation: ping-radar 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.animate-ping-sonar {
+  animation: ping-sonar 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.animate-ping-auth {
+  animation: ping-auth 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.animate-pulse-logo {
+  animation: pulse-logo 4s ease-in-out infinite;
+}
+
+.delay-1000 { animation-delay: 1s; }
+.delay-2000 { animation-delay: 2s; }
