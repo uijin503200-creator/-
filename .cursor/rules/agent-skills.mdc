@@ -10,4 +10,8 @@ Before non-trivial technical work:
 3. Open `reference.md` or `references/` in that folder when the skill links to them.
 4. Prefer project skills over guessing; the user does not need to say "read skill" each time.
 
-Upstream source: https://github.com/addyosmani/agent-skills
+For real-browser interaction (click/type/navigate, logged-in sessions, JS-rendered or bot-protected pages), use `.cursor/skills/browser-harness/SKILL.md` and its `install.md`. Prefer `curl`/fetch for plain public HTTP.
+
+Upstream:
+- https://github.com/addyosmani/agent-skills
+- https://github.com/browser-use/browser-harness

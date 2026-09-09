@@ -54,6 +54,13 @@ npx skills add addyosmani/agent-skills -y
 cp -a .agents/skills/. .cursor/skills/
 ```
 
+Real-browser CDP control from [browser-use/browser-harness](https://github.com/browser-use/browser-harness):
+
+```bash
+npx skills add browser-use/browser-harness -y
+cp -a .agents/skills/browser-harness .cursor/skills/
+```
+
 ## Screens
 
 - `/` — cinematic pulse field, nearby discovery, pages meter
