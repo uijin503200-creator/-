@@ -15,23 +15,30 @@ export async function getOrCreateUser(uid: string, email: string) {
   return result[0];
 }
 
-export async function dropNote(userId: string, latitude: number, longitude: number, content: string) {
+export async function dropNote(
+  userId: string,
+  latitude: number,
+  longitude: number,
+  content: string,
+  writtenWeather?: string | null,
+  writtenTime?: string | null,
+) {
   return await db.transaction(async (tx) => {
     const user = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!user || user.length === 0 || user[0].pagesLeft <= 0) {
       throw new Error("No pages left to drop a note.");
     }
     
-    // Decrement pages
     await tx.update(users).set({ pagesLeft: user[0].pagesLeft - 1 }).where(eq(users.id, userId));
     
-    // Create note
     const note = await tx.insert(notes).values({
       id: uuidv4(),
       userId,
       latitude,
       longitude,
       content,
+      writtenWeather: writtenWeather ?? null,
+      writtenTime: writtenTime ?? null,
     }).returning();
     
     return note[0];
@@ -70,13 +77,24 @@ export async function moveSeedNoteTo(latitude: number, longitude: number) {
       content: 'If you found this, you were looking. Stay a little longer.',
       isDormant: true,
       echoCount: 0,
+      writtenWeather: 'Rain',
+      writtenTime: 'Night',
     });
     return;
   }
 
-  if (distanceMeters(latitude, longitude, existing[0].latitude, existing[0].longitude) > 15) {
+  const seedPatch: { latitude: number; longitude: number; writtenWeather: string; writtenTime: string } = {
+    latitude,
+    longitude,
+    writtenWeather: 'Rain',
+    writtenTime: 'Night',
+  };
+
+  if (distanceMeters(latitude, longitude, existing[0].latitude, existing[0].longitude) > 15
+    || existing[0].writtenWeather !== 'Rain'
+    || existing[0].writtenTime !== 'Night') {
     await db.update(notes)
-      .set({ latitude, longitude })
+      .set(seedPatch)
       .where(eq(notes.id, SEED_NOTE_ID));
   }
 }

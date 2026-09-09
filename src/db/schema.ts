@@ -17,6 +17,8 @@ export const notes = pgTable('notes', {
   isDormant: boolean('is_dormant').default(true).notNull(),
   firstReadAt: timestamp('first_read_at'),
   echoCount: integer('echo_count').default(0).notNull(),
+  writtenWeather: text('written_weather'),
+  writtenTime: text('written_time'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

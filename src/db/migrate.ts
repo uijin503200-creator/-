@@ -24,4 +24,7 @@ export async function ensureSchema() {
       created_at timestamp DEFAULT now()
     )
   `);
+
+  await db.execute(sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS written_weather text`);
+  await db.execute(sql`ALTER TABLE notes ADD COLUMN IF NOT EXISTS written_time text`);
 }

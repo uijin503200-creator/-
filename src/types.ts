@@ -8,6 +8,8 @@ export interface Note {
   firstReadAt: string | null;
   echoCount: number;
   createdAt: string;
+  writtenWeather: string | null;
+  writtenTime: string | null;
 }
 
 export interface User {

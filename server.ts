@@ -5,6 +5,7 @@ import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from './src/middleware/auth.ts';
 import { getOrCreateUser, dropNote, getNearbyNotes, readNote, echoNote } from './src/db/queries.ts';
 import { ensureSchema } from './src/db/migrate.ts';
+import { fetchWeatherGhost } from './src/lib/open-meteo.ts';
 
 async function startServer() {
   await ensureSchema();
@@ -50,8 +51,18 @@ async function startServer() {
       if (!req.user) return res.status(401).json({ error: "No user" });
       const { lat, lng, content } = req.body;
       if (!lat || !lng || !content) return res.status(400).json({ error: "Missing fields" });
+
+      let writtenWeather: string | null = null;
+      let writtenTime: string | null = null;
+      try {
+        const ghost = await fetchWeatherGhost(lat, lng);
+        writtenWeather = ghost.writtenWeather;
+        writtenTime = ghost.writtenTime;
+      } catch (weatherError) {
+        console.error('Weather ghost capture failed:', weatherError);
+      }
       
-      const note = await dropNote(req.user.uid, lat, lng, content);
+      const note = await dropNote(req.user.uid, lat, lng, content, writtenWeather, writtenTime);
       res.json(note);
     } catch (error: any) {
       console.error(error);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useTransform } from 'motion/react';
 import { Note, User } from '../types.ts';
+import WeatherGhostOverlay from './WeatherGhostOverlay.tsx';
 
 interface ReaderProps {
   note: Note;
@@ -59,6 +60,9 @@ export default function ReaderScreen({ note, token, onClose, currentUser }: Read
 
   const displayNote = readState || note;
   const isAuthor = note.userId === currentUser.id;
+  const writtenWeather = displayNote.writtenWeather ?? note.writtenWeather ?? null;
+  const writtenTime = displayNote.writtenTime ?? note.writtenTime ?? null;
+  const isNightGhost = writtenTime === 'Night';
 
   const y = useMotionValue(0);
   const opacity = useTransform(y, [0, 200], [1, 0]);
@@ -68,10 +72,15 @@ export default function ReaderScreen({ note, token, onClose, currentUser }: Read
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.4 } }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center p-8 overflow-hidden"
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center p-8 overflow-hidden ${isNightGhost ? 'weather-ghost-night-glow' : ''}`}
     >
       {/* Background Overlay mapped to physics */}
-      <motion.div style={{ opacity }} className="absolute inset-0 bg-zinc-950/95 backdrop-blur-md pointer-events-none" />
+      <motion.div
+        style={{ opacity }}
+        className={`absolute inset-0 backdrop-blur-md pointer-events-none ${isNightGhost ? 'bg-[#070b16]/95' : 'bg-zinc-950/95'}`}
+      />
+
+      <WeatherGhostOverlay weather={writtenWeather} time={writtenTime} />
 
       {/* Physics-based draggable paper */}
       <motion.div 
@@ -88,7 +97,7 @@ export default function ReaderScreen({ note, token, onClose, currentUser }: Read
         animate={{ y: 0 }}
         exit={{ y: 300, opacity: 0 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="max-w-md w-full relative flex flex-col items-center cursor-grab active:cursor-grabbing pb-16 pt-8 z-10"
+        className={`max-w-md w-full relative flex flex-col items-center cursor-grab active:cursor-grabbing pb-16 pt-8 z-10 ${isNightGhost ? 'weather-ghost-paper-night' : ''}`}
       >
         {/* Visual Grab Handle */}
         <div className="w-12 h-1 rounded-full bg-zinc-700/40 mb-12" />
@@ -111,9 +120,15 @@ export default function ReaderScreen({ note, token, onClose, currentUser }: Read
             <motion.div
               animate={isPulsing ? { 
                 scale: [1, 1.05, 1], 
-                color: ["#e4e4e7", "#ffffff", "#e4e4e7"],
-                textShadow: ["0px 0px 0px rgba(255,255,255,0)", "0px 0px 20px rgba(255,255,255,0.4)", "0px 0px 0px rgba(255,255,255,0)"]
-              } : { scale: 1, color: "#e4e4e7" }}
+                color: isNightGhost ? ["#dbe7ff", "#ffffff", "#dbe7ff"] : ["#e4e4e7", "#ffffff", "#e4e4e7"],
+                textShadow: isNightGhost
+                  ? ["0px 0px 12px rgba(170,200,255,0.25)", "0px 0px 28px rgba(200,220,255,0.55)", "0px 0px 12px rgba(170,200,255,0.25)"]
+                  : ["0px 0px 0px rgba(255,255,255,0)", "0px 0px 20px rgba(255,255,255,0.4)", "0px 0px 0px rgba(255,255,255,0)"]
+              } : {
+                scale: 1,
+                color: isNightGhost ? "#dbe7ff" : "#e4e4e7",
+                textShadow: isNightGhost ? "0px 0px 24px rgba(160,190,255,0.35)" : "0px 0px 0px rgba(255,255,255,0)",
+              }}
               transition={{ duration: 0.8, ease: "easeInOut" }}
             >
               "{displayNote.content}"
