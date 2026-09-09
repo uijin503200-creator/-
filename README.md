@@ -45,6 +45,15 @@ Schedule `select public.purge_expired_notes();` (pg_cron or Edge Function) to pe
 | Decay | Deletes 24h after first read + `echo_count × 7 days` |
 | Echo | One echo per reader; extends survival |
 
+## Agent skills
+
+Engineering workflows from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) are installed at `.cursor/skills/` (mirrored in `.agents/skills/`). Refresh with:
+
+```bash
+npx skills add addyosmani/agent-skills -y
+cp -a .agents/skills/. .cursor/skills/
+```
+
 ## Screens
 
 - `/` — cinematic pulse field, nearby discovery, pages meter
