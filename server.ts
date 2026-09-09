@@ -6,6 +6,7 @@ import { requireAuth, AuthRequest } from './src/middleware/auth.ts';
 import { getOrCreateUser, dropNote, getNearbyNotes, readNote, echoNote } from './src/db/queries.ts';
 import { ensureSchema } from './src/db/migrate.ts';
 import { fetchWeatherGhost } from './src/lib/open-meteo.ts';
+import { clientIpFromRequest, ipinfoUrl } from './src/lib/client-ip.ts';
 
 async function startServer() {
   await ensureSchema();
@@ -94,9 +95,9 @@ async function startServer() {
     }
   });
 
-  app.get("/api/geo/live", async (_req, res) => {
+  app.get("/api/geo/live", async (req, res) => {
     try {
-      const response = await fetch("https://ipinfo.io/json", {
+      const response = await fetch(ipinfoUrl(clientIpFromRequest(req)), {
         headers: { Accept: "application/json" },
       });
       if (!response.ok) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { X, Send } from 'lucide-react';
 import { User } from '../types.ts';
@@ -16,6 +16,7 @@ export default function ComposerScreen({ user, token, onClose, onDropped }: Comp
   const [isDropping, setIsDropping] = useState(false);
   const [error, setError] = useState('');
   const [location, setLocation] = useState<LiveFix | null>(null);
+  const droppingRef = useRef(false);
 
   useEffect(() => {
     return requestLiveLocation({
@@ -28,7 +29,8 @@ export default function ComposerScreen({ user, token, onClose, onDropped }: Comp
   }, []);
 
   const handleDrop = async () => {
-    if (!content.trim() || !location) return;
+    if (!content.trim() || !location || isDropping || droppingRef.current) return;
+    droppingRef.current = true;
     setIsDropping(true);
     
     try {
@@ -50,10 +52,12 @@ export default function ComposerScreen({ user, token, onClose, onDropped }: Comp
       } else {
         const data = await res.json();
         setError(data.error || 'Failed to drop note.');
+        droppingRef.current = false;
         setIsDropping(false);
       }
     } catch (err) {
       setError('Network error.');
+      droppingRef.current = false;
       setIsDropping(false);
     }
   };

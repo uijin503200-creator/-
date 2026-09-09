@@ -1,6 +1,6 @@
 import { db } from './index.ts';
 import { users, notes } from './schema.ts';
-import { eq } from 'drizzle-orm';
+import { eq, and, gt, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { addDays, addHours, isAfter } from 'date-fns';
 
@@ -24,13 +24,14 @@ export async function dropNote(
   writtenTime?: string | null,
 ) {
   return await db.transaction(async (tx) => {
-    const user = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
-    if (!user || user.length === 0 || user[0].pagesLeft <= 0) {
+    const updated = await tx.update(users)
+      .set({ pagesLeft: sql`${users.pagesLeft} - 1` })
+      .where(and(eq(users.id, userId), gt(users.pagesLeft, 0)))
+      .returning();
+    if (updated.length === 0) {
       throw new Error("No pages left to drop a note.");
     }
-    
-    await tx.update(users).set({ pagesLeft: user[0].pagesLeft - 1 }).where(eq(users.id, userId));
-    
+
     const note = await tx.insert(notes).values({
       id: uuidv4(),
       userId,

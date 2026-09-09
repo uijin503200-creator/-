@@ -16,6 +16,9 @@ export function startWeatherAmbience(weather: string | null, time: string | null
   if (!AudioCtx) return { stop() {} };
 
   const ctx = new AudioCtx();
+  if (ctx.state === 'suspended') {
+    void ctx.resume();
+  }
   const master = ctx.createGain();
   master.gain.value = 0;
   master.connect(ctx.destination);

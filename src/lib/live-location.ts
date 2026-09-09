@@ -1,3 +1,5 @@
+import { coordsFromGeoPayload } from './client-ip.ts';
+
 export type LiveFix = {
   lat: number;
   lng: number;
@@ -10,18 +12,29 @@ type LiveLocationCallbacks = {
   onError: (message: string) => void;
 };
 
+async function readIpinfo(url: string): Promise<LiveFix | null> {
+  const res = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const coords = coordsFromGeoPayload(data);
+  if (!coords) return null;
+  return {
+    lat: coords.lat,
+    lng: coords.lng,
+    accuracy: data.accuracy ?? null,
+    source: 'ip',
+  };
+}
+
 async function ipFallback(): Promise<LiveFix | null> {
   try {
-    const res = await fetch('/api/geo/live');
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!Number.isFinite(data.lat) || !Number.isFinite(data.lng)) return null;
-    return {
-      lat: data.lat,
-      lng: data.lng,
-      accuracy: data.accuracy ?? null,
-      source: 'ip',
-    };
+    const fromClient = await readIpinfo('https://ipinfo.io/json');
+    if (fromClient) return fromClient;
+  } catch {
+    // Browser CORS or network failure — try the server, which uses the request IP.
+  }
+  try {
+    return await readIpinfo('/api/geo/live');
   } catch {
     return null;
   }
