@@ -102,11 +102,11 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
     };
   }, [token, location?.lat, location?.lng]);
 
-  const hasNotes = nearbyNotes.length > 0;
+  const discoveredNote = nearbyNotes.find((note) => note.userId !== user.id) ?? nearbyNotes[0];
+  const hasNotes = Boolean(discoveredNote);
   const mapKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
   return (
-    <APIProvider apiKey={mapKey}>
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -115,17 +115,19 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
       >
         {/* The Map Background */}
         <div className="absolute inset-0 z-0 pointer-events-none opacity-60">
-          {location && (
-            <Map
-              defaultZoom={17}
-              defaultCenter={location}
-              center={location}
-              styles={mapStyles}
-              disableDefaultUI={true}
-              keyboardShortcuts={false}
-              gestureHandling="none"
-              internalUsageAttributionIds={["gmp_mcp_codeassist_v1_aistudio"]}
-            />
+          {location && mapKey && (
+            <APIProvider apiKey={mapKey}>
+              <Map
+                defaultZoom={17}
+                defaultCenter={location}
+                center={location}
+                styles={mapStyles}
+                disableDefaultUI={true}
+                keyboardShortcuts={false}
+                gestureHandling="none"
+                internalUsageAttributionIds={["gmp_mcp_codeassist_v1_aistudio"]}
+              />
+            </APIProvider>
           )}
         </div>
 
@@ -155,7 +157,7 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
                   animate={{ scale: [1, 1.1, 1] }} 
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                   className="w-32 h-32 flex items-center justify-center rounded-full bg-zinc-950 border border-zinc-700 shadow-[0_0_50px_rgba(255,255,255,0.1)] cursor-pointer"
-                  onClick={() => onRead(nearbyNotes[0])}
+                  onClick={() => discoveredNote && onRead(discoveredNote)}
                 >
                   <Mail size={32} className="text-zinc-200 stroke-1" />
                 </motion.div>
@@ -190,6 +192,5 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
       </div>
 
       </motion.div>
-    </APIProvider>
   );
 }
