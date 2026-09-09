@@ -64,7 +64,7 @@ export function AncientLetter({ visible, content, onClose }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 13, 0.96)',
+    backgroundColor: palette.void,
     paddingHorizontal: 32,
     justifyContent: 'center',
   },
