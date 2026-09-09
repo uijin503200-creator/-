@@ -87,8 +87,8 @@ export function DriftMap({ coords, notes = [], onRegionChangeComplete, onNotePre
         <Circle
           center={coords}
           radius={DISCOVERY_RADIUS_METERS}
-          strokeColor="rgba(61, 126, 255, 0.22)"
-          fillColor="rgba(61, 126, 255, 0.05)"
+          strokeColor="rgba(34, 34, 34, 0.9)"
+          fillColor="rgba(34, 34, 34, 0.08)"
           strokeWidth={1}
         />
 
@@ -126,11 +126,11 @@ export function DriftMap({ coords, notes = [], onRegionChangeComplete, onNotePre
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: palette.void,
+    backgroundColor: '#050505',
   },
   vignette: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(5, 7, 13, 0.18)',
+    backgroundColor: 'rgba(5, 5, 5, 0.12)',
   },
   noPointer: {
     pointerEvents: 'none',

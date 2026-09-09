@@ -38,7 +38,7 @@ export function DriftMap({ coords, notes = [], onNotePress }: Props) {
       style={styles.root}
       accessibilityLabel={`Map centered at ${coords.latitude}, ${coords.longitude}`}>
       <LinearGradient
-        colors={['#05070D', '#0B1524', '#121926', '#0A1220']}
+        colors={['#050505', '#0A0A0A', '#121212', '#050505']}
         locations={[0, 0.35, 0.7, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -70,34 +70,34 @@ export function DriftMap({ coords, notes = [], onNotePress }: Props) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: palette.void,
+    backgroundColor: '#050505',
   },
   band: {
     position: 'absolute',
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(61, 126, 255, 0.06)',
+    borderColor: 'rgba(34, 34, 34, 0.55)',
   },
   bandA: {
     width: '140%',
     height: '55%',
     top: '10%',
     left: '-20%',
-    backgroundColor: 'rgba(18, 25, 38, 0.55)',
+    backgroundColor: 'rgba(21, 21, 21, 0.45)',
   },
   bandB: {
     width: '90%',
     height: '35%',
     bottom: '18%',
     right: '-15%',
-    backgroundColor: 'rgba(7, 16, 28, 0.7)',
+    backgroundColor: 'rgba(10, 10, 10, 0.65)',
   },
   bandC: {
     width: '70%',
     height: '28%',
     top: '42%',
     left: '-10%',
-    backgroundColor: 'rgba(22, 32, 48, 0.35)',
+    backgroundColor: 'rgba(21, 21, 21, 0.28)',
   },
   center: {
     ...StyleSheet.absoluteFill,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(61, 126, 255, 0.22)',
+    borderColor: 'rgba(34, 34, 34, 0.9)',
   },
   noteDot: {
     position: 'absolute',
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   vignette: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(5, 7, 13, 0.22)',
+    backgroundColor: 'rgba(5, 5, 5, 0.2)',
   },
   noPointer: {
     pointerEvents: 'none',
