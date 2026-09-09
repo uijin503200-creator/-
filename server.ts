@@ -1,5 +1,6 @@
 import './src/load-env.ts';
 import express from "express";
+import fs from "node:fs";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { requireAuth, AuthRequest } from './src/middleware/auth.ts';
@@ -123,6 +124,21 @@ async function startServer() {
       res.status(500).json({ error: error.message });
     }
   });
+
+  const filmFiles = [
+    path.resolve(process.cwd(), "public/promo/drift-film.mp4"),
+    "/opt/cursor/artifacts/drift_notes_spread_presence_detected.mp4",
+  ];
+  const sendFilmDownload = (_req: express.Request, res: express.Response) => {
+    const file = filmFiles.find((candidate) => fs.existsSync(candidate));
+    if (!file) {
+      res.status(404).send("Film file is not available.");
+      return;
+    }
+    res.download(file, "drift-film.mp4");
+  };
+  app.get("/film/download", sendFilmDownload);
+  app.get("/film.mp4", sendFilmDownload);
 
   // --- VITE MIDDLEWARE ---
   if (process.env.NODE_ENV !== "production") {

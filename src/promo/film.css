@@ -387,6 +387,25 @@
   font-weight: 300;
 }
 
+.film-download {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
+  z-index: 80;
+  pointer-events: auto;
+  cursor: pointer;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 300;
+  color: rgba(161, 161, 170, 0.85);
+  text-decoration: none;
+}
+
+.film-download:hover {
+  color: #e4e4e7;
+}
+
 @keyframes film-ring {
   from { transform: scale(1); opacity: 0.8; }
   to { transform: scale(3.6); opacity: 0; }

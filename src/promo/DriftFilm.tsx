@@ -317,6 +317,10 @@ export default function DriftFilm() {
           style={{ left: `${cursor.x}%`, top: `${cursor.y}%` }}
         />
       )}
+
+      <a className="film-download" href="/film/download" download="drift-film.mp4">
+        Download
+      </a>
     </div>
   );
 }
