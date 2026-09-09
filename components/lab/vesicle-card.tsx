@@ -81,7 +81,7 @@ export function VesicleCard({
       )}
 
       {canRefold && misfit && (
-        <form action={applyChaperoneForm}>
+        <form action={applyChaperoneForm} method="post">
           <input type="hidden" name="vesicleId" value={vesicle.id} />
           <ChaperoneButton />
         </form>

@@ -31,7 +31,7 @@ export function TranscriptionForm({
   const defaultRecipient = recipients[0]?.id ?? "";
 
   return (
-    <form action={sendVesicle} className="space-y-6">
+    <form action={sendVesicle} method="post" className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="dna">DNA seed — exact intent</Label>
         <Textarea

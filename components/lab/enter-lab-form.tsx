@@ -1,24 +1,12 @@
-"use client";
-
-import { useFormStatus } from "react-dom";
 import { enterTheLabForm } from "@/app/actions/cell";
 import { CELL_PHENOTYPES, CELL_TYPE_IDS } from "@/lib/biology";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-function SeatButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="lg" disabled={pending}>
-      {pending ? "Seating…" : "Seat this cell on the stage"}
-    </Button>
-  );
-}
+import { FormSubmit } from "./form-submit";
 
 export function EnterLabForm() {
   return (
-    <form action={enterTheLabForm} className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+    <form action={enterTheLabForm} method="post" className="mx-auto flex w-full max-w-3xl flex-col gap-8">
       <div className="grid gap-3 sm:grid-cols-3">
         {CELL_TYPE_IDS.map((id) => {
           const phenotype = CELL_PHENOTYPES[id];
@@ -60,7 +48,7 @@ export function EnterLabForm() {
         />
       </div>
 
-      <SeatButton />
+      <FormSubmit idle="Seat this cell on the stage" pendingLabel="Seating…" size="lg" />
     </form>
   );
 }
