@@ -1,13 +1,12 @@
-/** Google Maps JSON style — empty dark geography, no labels / POIs / buildings. */
+/** Google Maps JSON style — cinematic near-black radar geography. */
 export const DRIFT_DARK_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#0B1018' }] },
-  { elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { elementType: 'geometry', stylers: [{ color: '#050505' }] },
   { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { elementType: 'labels.text', stylers: [{ visibility: 'off' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ visibility: 'off' }] },
   {
     featureType: 'administrative',
     elementType: 'geometry',
-    stylers: [{ visibility: 'off' }],
+    stylers: [{ color: '#050505' }, { visibility: 'off' }],
   },
   {
     featureType: 'administrative.land_parcel',
@@ -20,17 +19,17 @@ export const DRIFT_DARK_MAP_STYLE = [
   {
     featureType: 'landscape',
     elementType: 'geometry',
-    stylers: [{ color: '#121926' }],
+    stylers: [{ color: '#050505' }],
   },
   {
     featureType: 'landscape.man_made',
     elementType: 'geometry',
-    stylers: [{ color: '#101722' }],
+    stylers: [{ color: '#050505' }],
   },
   {
     featureType: 'landscape.natural',
     elementType: 'geometry',
-    stylers: [{ color: '#0E1520' }],
+    stylers: [{ color: '#050505' }],
   },
   {
     featureType: 'poi',
@@ -39,42 +38,52 @@ export const DRIFT_DARK_MAP_STYLE = [
   {
     featureType: 'poi.park',
     elementType: 'geometry',
-    stylers: [{ visibility: 'off' }],
+    stylers: [{ color: '#050505' }, { visibility: 'off' }],
   },
   {
     featureType: 'road',
     elementType: 'geometry',
-    stylers: [{ color: '#1A2436' }],
+    stylers: [{ color: '#151515' }],
   },
   {
     featureType: 'road',
     elementType: 'geometry.stroke',
-    stylers: [{ color: '#0B1018' }],
+    stylers: [{ color: '#050505' }],
   },
   {
     featureType: 'road',
-    elementType: 'labels',
+    elementType: 'labels.icon',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#333333' }],
+  },
+  {
+    featureType: 'road',
+    elementType: 'labels.text.stroke',
     stylers: [{ visibility: 'off' }],
   },
   {
     featureType: 'road.arterial',
     elementType: 'geometry',
-    stylers: [{ color: '#1E2A3E' }],
+    stylers: [{ color: '#151515' }],
   },
   {
     featureType: 'road.highway',
     elementType: 'geometry',
-    stylers: [{ color: '#243148' }],
+    stylers: [{ color: '#151515' }],
   },
   {
     featureType: 'road.highway',
     elementType: 'geometry.stroke',
-    stylers: [{ color: '#0B1018' }],
+    stylers: [{ color: '#050505' }],
   },
   {
     featureType: 'road.local',
     elementType: 'geometry',
-    stylers: [{ color: '#162030' }],
+    stylers: [{ color: '#151515' }],
   },
   {
     featureType: 'transit',
@@ -83,11 +92,16 @@ export const DRIFT_DARK_MAP_STYLE = [
   {
     featureType: 'water',
     elementType: 'geometry',
-    stylers: [{ color: '#07101C' }],
+    stylers: [{ color: '#050505' }],
   },
   {
     featureType: 'water',
-    elementType: 'labels',
+    elementType: 'labels.icon',
+    stylers: [{ visibility: 'off' }],
+  },
+  {
+    featureType: 'water',
+    elementType: 'labels.text.stroke',
     stylers: [{ visibility: 'off' }],
   },
 ] as Array<{

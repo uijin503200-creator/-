@@ -4,6 +4,12 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AncientLetter } from '@/components/AncientLetter';
+import { DriftMap } from '@/components/DriftMap';
+import { DropDriftModal } from '@/components/DropDriftModal';
+import { FadeIn } from '@/components/FadeIn';
+import { GhostButton } from '@/components/GhostButton';
+import { RadarOverlay } from '@/components/RadarOverlay';
 import { useAuth } from '@/hooks/useAuth';
 import { useDiscovery } from '@/hooks/useDiscovery';
 import { useLocation } from '@/hooks/useLocation';
@@ -11,15 +17,7 @@ import { useNotes } from '@/hooks/useNotes';
 import { dropDrift } from '@/lib/drifts';
 import { palette, typography } from '@/lib/theme';
 
-import { AncientLetter } from '@/components/AncientLetter';
-import { DriftMap } from '@/components/DriftMap';
-import { DropDriftModal } from '@/components/DropDriftModal';
-import { EnvelopeSignal } from '@/components/EnvelopeSignal';
-import { FadeIn } from '@/components/FadeIn';
-import { GhostButton } from '@/components/GhostButton';
-import { PagesMeter } from '@/components/PagesMeter';
-
-export default function HomeScreen() {
+export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { userId, profile, loading: authLoading, demoMode, refreshProfile } = useAuth();
   const {
@@ -32,7 +30,7 @@ export default function HomeScreen() {
     walkToward,
     hardResetDemo,
   } = useLocation();
-  const { notes, loading: notesLoading, refresh } = useNotes();
+  const { notes, refresh } = useNotes();
   const { envelope, letterOpen, openEnvelope, closeLetter, senseNow } = useDiscovery();
 
   const [asking, setAsking] = useState(false);
@@ -44,6 +42,7 @@ export default function HomeScreen() {
   const granted = permission === Location.PermissionStatus.GRANTED;
   const denied = permission === Location.PermissionStatus.DENIED;
   const pagesLeft = profile?.pages ?? 0;
+  const presenceDetected = !!envelope && !letterOpen;
 
   const onAllowLocation = async () => {
     setAsking(true);
@@ -133,49 +132,31 @@ export default function HomeScreen() {
         onNotePress={(id) => router.push(`/note/${id}`)}
       />
 
+      <RadarOverlay presenceDetected={presenceDetected} onOpenEnvelope={openEnvelope} />
+
       <View
-        style={[styles.overlay, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 28 }]}
+        style={[styles.hud, { paddingBottom: Math.max(insets.bottom, 16) + 20, paddingTop: insets.top + 12 }]}
         pointerEvents="box-none">
-        <FadeIn>
-          <Text style={styles.brandOverlay}>Drift</Text>
-          <View style={styles.pagesTop}>
-            <PagesMeter pages={pagesLeft} />
-          </View>
-        </FadeIn>
-
-        <View style={styles.middle} pointerEvents="box-none">
-          {envelope && !letterOpen ? (
-            <FadeIn>
-              <Text style={styles.envelopeHint}>Something waits nearby</Text>
-              <EnvelopeSignal onPress={openEnvelope} />
-            </FadeIn>
-          ) : (
-            <Text style={styles.status}>
-              {notesLoading
-                ? 'Listening…'
-                : closest
-                  ? `${Math.round(closest.distanceMeters)}m to the nearest whisper`
-                  : 'Empty geography. Walk to wake a note.'}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.footer} pointerEvents="box-none">
-          {(demoMode || usingDemoLocation) && closest && !envelope ? (
-            <GhostButton
-              label="Walk toward nearest"
-              variant="ghost"
+        <View style={styles.topHud} pointerEvents="box-none">
+          {(demoMode || usingDemoLocation) && closest && !presenceDetected ? (
+            <Pressable
               onPress={() => {
                 walkToward(closest);
                 void senseNow();
               }}
-              style={styles.demoBtn}
-            />
+              hitSlop={10}
+              style={styles.ghostLink}>
+              <Text style={styles.ghostLinkText}>WALK TOWARD</Text>
+            </Pressable>
           ) : null}
           {!granted ? (
-            <GhostButton label="Allow location" variant="ghost" onPress={onAllowLocation} />
+            <Pressable onPress={onAllowLocation} hitSlop={10} style={styles.ghostLink}>
+              <Text style={styles.ghostLinkText}>ALLOW LOCATION</Text>
+            </Pressable>
           ) : null}
+        </View>
 
+        <View style={styles.bottomHud} pointerEvents="box-none">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Drop a Drift"
@@ -185,10 +166,10 @@ export default function HomeScreen() {
               setDropOpen(true);
             }}
             style={({ pressed }) => [
-              styles.dropFab,
-              (pagesLeft <= 0 || pressed) && styles.dropFabDim,
+              styles.dropButton,
+              (pagesLeft <= 0 || pressed) && styles.dropButtonDim,
             ]}>
-            <Text style={styles.dropLabel}>Drop</Text>
+            <Text style={styles.dropLabel}>DROP</Text>
           </Pressable>
 
           {usingDemoLocation ? (
@@ -197,7 +178,8 @@ export default function HomeScreen() {
                 await hardResetDemo();
                 if (typeof window !== 'undefined') window.location.reload();
               }}
-              hitSlop={12}>
+              hitSlop={12}
+              style={styles.demoReset}>
               <Text style={styles.demoHint}>{locError ?? 'Demo location'} · reset plaza</Text>
             </Pressable>
           ) : null}
@@ -231,11 +213,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: palette.void,
+    backgroundColor: '#050505',
   },
   boot: {
     flex: 1,
-    backgroundColor: palette.void,
+    backgroundColor: '#050505',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
@@ -253,20 +235,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     textAlign: 'center',
     marginBottom: 28,
-  },
-  brandOverlay: {
-    fontFamily: typography.display,
-    fontSize: 42,
-    color: palette.paper,
-    letterSpacing: 1,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.55)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 12,
-  },
-  pagesTop: {
-    marginTop: 14,
-    alignItems: 'center',
   },
   permissionBlock: {
     gap: 14,
@@ -295,61 +263,56 @@ const styles = StyleSheet.create({
   demoCta: {
     marginTop: 12,
   },
-  overlay: {
+  hud: {
     ...StyleSheet.absoluteFill,
-    paddingHorizontal: 28,
     justifyContent: 'space-between',
-  },
-  middle: {
     alignItems: 'center',
   },
-  status: {
-    fontFamily: typography.body,
-    fontSize: 14,
-    color: palette.fog,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  envelopeHint: {
-    fontFamily: typography.body,
-    fontSize: 13,
-    color: palette.fog,
-    textAlign: 'center',
-    marginBottom: 14,
-    letterSpacing: 0.4,
-  },
-  footer: {
+  topHud: {
     alignItems: 'center',
-    gap: 16,
+    gap: 10,
   },
-  demoBtn: {
-    minWidth: 220,
-  },
-  dropFab: {
-    minWidth: 120,
-    paddingVertical: 16,
-    paddingHorizontal: 36,
+  bottomHud: {
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: palette.paper,
+    gap: 14,
   },
-  dropFabDim: {
+  ghostLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  ghostLinkText: {
+    fontFamily: typography.label,
+    fontSize: 11,
+    letterSpacing: 3,
+    color: '#555555',
+  },
+  dropButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#333333',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dropButtonDim: {
     opacity: 0.35,
   },
   dropLabel: {
-    fontFamily: typography.bodyMedium,
-    fontSize: 15,
-    letterSpacing: 4,
+    fontFamily: typography.body,
+    fontSize: 11,
+    letterSpacing: 2,
+    color: '#FFFFFF',
     textTransform: 'uppercase',
-    color: palette.paper,
+  },
+  demoReset: {
+    marginTop: 2,
   },
   demoHint: {
     fontFamily: typography.body,
     fontSize: 11,
-    color: palette.mist,
-    opacity: 0.75,
+    color: '#555555',
     textAlign: 'center',
   },
 });
