@@ -125,12 +125,14 @@ export async function hasRead(noteId: string, userId: string): Promise<boolean> 
   return !!data;
 }
 
-/** Unread notes currently inside the 15m discovery radius. */
+/** Unread living notes inside the 15m discovery radius.
+ * Decayed notes (now > first_read_at + 24h [+ Echo]) never surface — no vibration.
+ */
 export async function discoverUnreadNotes(coords: Coords, userId: string): Promise<NearbyNote[]> {
   const within = await fetchNotesWithinRadius(coords, DISCOVERY_RADIUS_METERS);
   if (within.length === 0) return [];
   const readIds = await getReadIds(userId);
-  return within.filter((n) => !readIds.has(n.id));
+  return within.filter((n) => !n.isExpired && !readIds.has(n.id));
 }
 
 export async function fetchNoteById(id: string, coords: Coords | null): Promise<NearbyNote | null> {

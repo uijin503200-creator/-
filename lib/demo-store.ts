@@ -144,18 +144,24 @@ export async function createDemoNote(
   return note;
 }
 
-export async function markDemoRead(noteId: string, userId: string): Promise<Note> {
+/** Awaken a dormant drift: is_dormant → false, stamp exact first_read_at. */
+export async function awakenDemoDrift(noteId: string): Promise<Note> {
   const notes = await listDemoNotes();
   const idx = notes.findIndex((n) => n.id === noteId);
   if (idx < 0) throw new Error('Note faded away.');
 
   const note = { ...notes[idx] };
-  if (!note.first_read_at) {
-    note.first_read_at = new Date().toISOString();
+  if (note.is_dormant === true) {
     note.is_dormant = false;
+    note.first_read_at = new Date().toISOString();
+    notes[idx] = note;
+    await writeJson(NOTES_KEY, notes);
   }
-  notes[idx] = note;
-  await writeJson(NOTES_KEY, notes);
+  return note;
+}
+
+export async function markDemoRead(noteId: string, userId: string): Promise<Note> {
+  const note = await awakenDemoDrift(noteId);
 
   const reads = await readJson<Record<string, string[]>>(READS_KEY, {});
   const list = new Set(reads[userId] ?? []);

@@ -8,6 +8,7 @@ export function getExpiryMs(note: Pick<Note, 'first_read_at' | 'echo_count'>): n
   return first + BASE_DECAY_MS + note.echo_count * ECHO_EXTENSION_MS;
 }
 
+/** Dead / decayed: current time is past first_read_at + 24h (Echo extends). */
 export function isNoteExpired(
   note: Pick<Note, 'first_read_at' | 'echo_count'>,
   now = Date.now()
@@ -16,6 +17,9 @@ export function isNoteExpired(
   if (expiry == null) return false;
   return now >= expiry;
 }
+
+/** Alias: treat as dead so discovery must not fetch / vibrate. */
+export const isDecayed = isNoteExpired;
 
 export function remainingLifeMs(
   note: Pick<Note, 'first_read_at' | 'echo_count'>,
