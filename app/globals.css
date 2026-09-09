@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050807;
+  --foreground: #d8f6e8;
+  --card: #0b1410;
+  --card-foreground: #d8f6e8;
+  --popover: #0e1a14;
+  --popover-foreground: #d8f6e8;
+  --primary: #3dffc2;
+  --primary-foreground: #04211a;
+  --secondary: #163328;
+  --secondary-foreground: #b8e8d2;
+  --muted: #101a16;
+  --muted-foreground: #7fa894;
+  --accent: #ff6ad5;
+  --accent-foreground: #2a0a22;
+  --destructive: #ff4d6d;
+  --border: #1e3a30;
+  --input: #1e3a30;
+  --ring: #3dffc2;
+  --radius: 1.15rem;
+  --dna: #5b9dff;
+  --mrna: #ff6ad5;
+  --protein: #ffd166;
+  --misfold: #ff4d6d;
+  --cytoplasm: #071410;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-dna: var(--dna);
+  --color-mrna: var(--mrna);
+  --color-protein: var(--protein);
+  --color-misfold: var(--misfold);
+  --color-cytoplasm: var(--cytoplasm);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-instrument);
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 10px);
+  --radius-4xl: 2.5rem;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100dvh;
+}
+
+.font-display {
+  font-family: var(--font-instrument), ui-serif, Georgia, serif;
+}
+
+.cytoplasm-noise {
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(61, 255, 194, 0.08), transparent 28%),
+    radial-gradient(circle at 80% 10%, rgba(255, 106, 213, 0.06), transparent 24%),
+    radial-gradient(circle at 50% 90%, rgba(91, 157, 255, 0.07), transparent 32%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+}
+
+.eyepiece-vignette {
+  background:
+    radial-gradient(circle at center, transparent 46%, rgba(2, 6, 5, 0.55) 68%, rgba(2, 6, 5, 0.92) 100%);
+}
+
+.membrane {
+  box-shadow:
+    inset 0 0 0 1px rgba(61, 255, 194, 0.18),
+    inset 0 0 0 6px rgba(61, 255, 194, 0.05),
+    0 0 40px rgba(61, 255, 194, 0.08);
+}
+
+.misfold-membrane {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 77, 109, 0.45),
+    inset 0 0 0 6px rgba(255, 77, 109, 0.08),
+    0 0 36px rgba(255, 77, 109, 0.16);
+}
+
+@keyframes organelle-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.35; }
+  50% { transform: translate3d(12px, -18px, 0) scale(1.08); opacity: 0.7; }
+  100% { transform: translate3d(-8px, 10px, 0) scale(0.96); opacity: 0.4; }
+}
+
+@keyframes codon-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
