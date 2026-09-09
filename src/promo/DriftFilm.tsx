@@ -95,16 +95,16 @@ export default function DriftFilm() {
   }, [hold]);
 
   useEffect(() => {
-    if (t < 58500) return undefined;
+    if (t < 57500) return undefined;
     const ambience = startWeatherAmbience('Rain', 'Night');
     return () => ambience.stop();
-  }, [t >= 58500]);
+  }, [t >= 57500]);
 
   const showTablet = t < 20500;
   const showAuth = t >= 16800 && t < 30500;
-  const showMap = t >= 20000 && t < 60500;
-  const showRadar = t >= 50500 && t < 60500;
-  const showReader = t >= 58500 && t < 79000;
+  const showMap = t >= 20000 && t < 59200;
+  const showRadar = t >= 50500 && t < 58200;
+  const showReader = t >= 57500 && t < 79000;
   const showEnd = t >= 76500;
 
   const tabletY = lerp(0, 4.2, easeInOut(span(t, 400, 16000)));
@@ -117,7 +117,7 @@ export default function DriftFilm() {
   const authZoom = lerp(1, 1.12, easeInOut(span(t, 22800, 27200)));
   const enterHot = t >= 26800 && t < 29600;
 
-  const mapOpacity = span(t, 29200, 30800) * (1 - span(t, 58800, 60400));
+  const mapOpacity = span(t, 29200, 30800) * (1 - span(t, 57200, 59000));
   const mapZoom =
     t < 32800 ? 16.7 :
     t < 40200 ? lerp(16.7, 10.55, easeInOut(span(t, 32800, 40200))) :
@@ -126,19 +126,19 @@ export default function DriftFilm() {
   const pinOpacity = 1 - span(t, 50800, 52800);
   const mapWash = showRadar ? lerp(1, 0.55, span(t, 50500, 52800)) : 1;
 
-  const readerOpacity = span(t, 58800, 60400) * (1 - span(t, 76500, 78600));
-  const radarOpacity = span(t, 51200, 53200) * (1 - span(t, 58800, 60400));
+  const readerOpacity = span(t, 57800, 59600) * (1 - span(t, 76500, 78600));
+  const radarOpacity = span(t, 51200, 53200) * (1 - span(t, 56200, 58000));
   const endOpacity = span(t, 77200, 79800);
   const mailHot = t >= 54800 && t < 58200;
 
-  const cursorVisible = (t >= 23800 && t < 29800) || (t >= 53800 && t < 59000);
+  const cursorVisible = (t >= 23800 && t < 29800) || (t >= 53800 && t < 57800);
   const cursorDown = (t >= 27800 && t < 28700) || (t >= 56400 && t < 57600);
   const cursor = useMemo(() => {
     if (t >= 23800 && t < 29800) {
       const u = easeInOut(span(t, 23800, 27400));
       return { x: lerp(66, 50, u), y: lerp(76, 71.4, u) };
     }
-    if (t >= 53800 && t < 59000) {
+    if (t >= 53800 && t < 57800) {
       const u = easeInOut(span(t, 53800, 56000));
       return { x: lerp(72, 50, u), y: lerp(26, 42.5, u) };
     }
@@ -164,7 +164,7 @@ export default function DriftFilm() {
     t < 29200 ? 'Unseen stories, waiting where you left them.' :
     t < 34800 ? 'Physical space is the only feed.' :
     t < 50000 ? 'Notes wait within 15 meters.' :
-    t < 58800 ? '' :
+    t < 57500 ? '' :
     t < 68000 ? '' :
     t < 76500 ? 'You are never alone here.' :
     '';
