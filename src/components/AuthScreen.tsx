@@ -2,11 +2,13 @@ import { signInWithPopup } from 'firebase/auth';
 import { auth, googleAuthProvider } from '../lib/firebase.ts';
 import { motion } from 'motion/react';
 import { Hexagon } from 'lucide-react';
+import { unlockWeatherAudio } from '../lib/weather-audio.ts';
 
 export default function AuthScreen({ onLogin }: { onLogin: (token: string) => void }) {
   const handleLogin = async () => {
     try {
       if (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true') {
+        unlockWeatherAudio();
         onLogin('dev:local-user');
         return;
       }

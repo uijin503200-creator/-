@@ -4,6 +4,7 @@ import { Compass, Mail } from 'lucide-react';
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import { Note, User } from '../types.ts';
 import { LiveFix, watchLiveLocation } from '../lib/live-location.ts';
+import { unlockWeatherAudio } from '../lib/weather-audio.ts';
 
 interface RadarProps {
   user: User;
@@ -147,7 +148,10 @@ export default function RadarScreen({ user, token, onCompose, onRead }: RadarPro
                   animate={{ scale: [1, 1.1, 1] }} 
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                   className="w-32 h-32 flex items-center justify-center rounded-full bg-zinc-950 border border-zinc-700 shadow-[0_0_50px_rgba(255,255,255,0.1)] cursor-pointer"
-                  onClick={() => discoveredNote && onRead(discoveredNote)}
+                  onClick={() => {
+                    unlockWeatherAudio();
+                    if (discoveredNote) onRead(discoveredNote);
+                  }}
                 >
                   <Mail size={32} className="text-zinc-200 stroke-1" />
                 </motion.div>

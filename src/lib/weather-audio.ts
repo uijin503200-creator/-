@@ -2,6 +2,22 @@ type AmbienceHandle = {
   stop: () => void;
 };
 
+let sharedCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!sharedCtx) sharedCtx = new AudioCtx();
+  return sharedCtx;
+}
+
+export function unlockWeatherAudio() {
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    void ctx.resume();
+  }
+}
+
 function createNoiseBuffer(ctx: AudioContext, seconds = 2) {
   const buffer = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -12,13 +28,9 @@ function createNoiseBuffer(ctx: AudioContext, seconds = 2) {
 }
 
 export function startWeatherAmbience(weather: string | null, time: string | null): AmbienceHandle {
-  const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioCtx) return { stop() {} };
-
-  const ctx = new AudioCtx();
-  if (ctx.state === 'suspended') {
-    void ctx.resume();
-  }
+  unlockWeatherAudio();
+  const ctx = getAudioContext();
+  if (!ctx) return { stop() {} };
   const master = ctx.createGain();
   master.gain.value = 0;
   master.connect(ctx.destination);
@@ -68,10 +80,10 @@ export function startWeatherAmbience(weather: string | null, time: string | null
       try {
         master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
         window.setTimeout(() => {
-          void ctx.close();
+          master.disconnect();
         }, 500);
       } catch {
-        void ctx.close();
+        try { master.disconnect(); } catch { /* already gone */ }
       }
     },
   };
